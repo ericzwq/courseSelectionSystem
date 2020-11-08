@@ -1,0 +1,6 @@
+详细接口地址：https://www.showdoc.cc/1093169299707533?page_id=5593243357467235 密码：hellowq
+
+公共地址为 http://localhost:3000/api
+老师查看所有课程 /api/teacher/allCourses?page=1&count=10
+page => 页数
+count => 每页数量
