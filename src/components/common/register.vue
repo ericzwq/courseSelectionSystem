@@ -2,22 +2,32 @@
   <el-form class="r-container" :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
     <h1 class="r-title">学生选课系统-注册</h1>
     <el-form-item label="姓名" prop="name">
-      <el-input v-model="ruleForm.name"></el-input>
+      <el-input v-model="ruleForm.name" size="small"></el-input>
     </el-form-item>
     <el-form-item label="用户名" prop="username">
-      <el-input v-model="ruleForm.username"></el-input>
+      <el-input v-model="ruleForm.username" size="small"></el-input>
     </el-form-item>
-    <el-form-item label="密码" prop="pass">
-      <el-input type="password" v-model="ruleForm.pass"></el-input>
+    <el-form-item label="密码" prop="password">
+      <el-input type="password" v-model="ruleForm.password" show-password size="small"></el-input>
     </el-form-item>
     <el-form-item label="确认密码" prop="checkPass">
-      <el-input type="password" v-model="ruleForm.checkPass"></el-input>
+      <el-input type="password" v-model="ruleForm.checkPass" show-password size="small"></el-input>
     </el-form-item>
     <el-form-item label="密保手机" prop="phone">
-      <el-input v-model.number="ruleForm.phone"></el-input>
+      <el-input v-model.number="ruleForm.phone" size="small"></el-input>
     </el-form-item>
     <el-form-item label="邀请码" prop="invitation">
-      <el-input v-model="ruleForm.invitation"></el-input>
+      <el-input v-model="ruleForm.invitation" size="small"></el-input>
+    </el-form-item>
+    <el-form-item label="性别" prop="sex">
+      <el-select v-model="ruleForm.sex" placeholder="请选择" size="small">
+        <el-option
+            v-for="item in sexOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value">
+        </el-option>
+      </el-select>
     </el-form-item>
     <div class="r-radioBox">
       <el-radio-group v-model="level">
@@ -26,7 +36,7 @@
         <el-radio :label="'admins'">管理员</el-radio>
       </el-radio-group>
       <div>
-        <router-link to="/login" class="r-login">登录 </router-link>
+        <router-link to="/login" class="r-login">登录</router-link>
         <router-link to="/findPsw" class="f-register"> 忘记密码？</router-link>
       </div>
     </div>
@@ -63,7 +73,7 @@
       let checkPassVal = (rule, value, callback) => {
         if (value === '') {
           callback(new Error('请确认密码'))
-        } else if (value !== this.ruleForm.pass) {
+        } else if (value !== this.ruleForm.password) {
           callback(new Error('两次输入密码不一致!'))
         } else {
           callback()
@@ -74,12 +84,16 @@
         ruleForm: {
           name: '',
           username: '',
-          pass: '',
+          password: '',
           checkPass: '',
-          dept: '',
           phone: '',
+          sex: '',
           invitation: '',
         },
+        sexOptions: [
+          {value: '男', label: '男'},
+          {value: '女', label: '女'}
+        ],
         rules: {
           name: [
             {required: true, message: '请输入姓名', trigger: 'blur'}
@@ -87,7 +101,7 @@
           username: [
             {required: true, validator: usernameVal, trigger: 'blur'}
           ],
-          pass: [
+          password: [
             {required: true, validator: passVal, trigger: 'blur'}
           ],
           checkPass: [
@@ -96,6 +110,12 @@
           phone: [
             {required: true, message: '请输入手机号', trigger: 'blur'},
             {type: 'number', message: '请输入正确的手机号', trigger: 'blur'}
+          ],
+          invitation: [
+            {required: true, message: '请输入邀请码', trigger: 'blur'}
+          ],
+          sex: [
+            {required: true, message: '请选择性别', trigger: 'blur'}
           ]
         }
       };
@@ -105,25 +125,23 @@
         this.$refs[formName].validate((valid) => {
           if (valid) {
             let ruleForm = this.ruleForm
-            this.axios.post('/register', {
-              name: ruleForm.name,
-              username: ruleForm.username,
-              password: ruleForm.checkPass,
-              phone: ruleForm.phone,
-              invitation: ruleForm.invitation,
-              level:this.level
-            }).then(r => {
+            ruleForm.level = this.level
+            this.axios.post('/register', ruleForm).then(r => {
               let data = r.data
-              if (data.status !== 0) return this.$message.error(data.message)
+              if (data.status !== 0) return
+              this.$message.success('注册成功,3秒后跳转')
+              sessionStorage.setItem('routers', JSON.stringify(data.routers))
               sessionStorage.setItem('token', data.token)
               sessionStorage.setItem('level', this.level)
               sessionStorage.setItem('id', data.id)
-              this.$message.success('注册成功,3秒后跳转')
-              console.log(data)
+              sessionStorage.setItem('name', data.name)
+              sessionStorage.setItem('sex', data.sex)
+              sessionStorage.setItem('username', ruleForm.username)
+              sessionStorage.setItem('phone', data.phone)
               setTimeout(() => {
-                this.$router.push('/' + this.level)
+                this.$router.push(this.level)
               }, 3000)
-            }, err => this.$err(err))
+            })
           } else {
             console.log('error submit!!');
             return false;

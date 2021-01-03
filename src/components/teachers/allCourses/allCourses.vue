@@ -1,48 +1,50 @@
 <template>
-  <div>
-    <el-table
-        :data="tableData"
-        stripe
-        height="528px"
-        style="width: 100%">
-      <el-table-column
-          type="index"
-          :index="computeIndex"
-          label="序号"
-          width="180"><!--prop="courseId"-->
-      </el-table-column>
-      <el-table-column
-          prop="courseName"
-          label="课程名"
-          width="180">
-      </el-table-column>
-      <el-table-column
-          prop="teacherName"
-          label="教师名">
-      </el-table-column>
-      <el-table-column
-          prop="classroom"
-          label="教室">
-      </el-table-column>
-      <el-table-column
-          prop="selectedCount"
-          label="已选人数">
-      </el-table-column>
-      <el-table-column
-          prop="maxCount"
-          label="人数上限">
-      </el-table-column>
-    </el-table>
-    <el-pagination
-        style="float: right"
-        background
-        layout="sizes,prev, pager, next,jumper"
-        :current-page="page"
-        @current-change="pageChange"
-        @size-change="countChange"
-        :total="totalCount">
-    </el-pagination>
-  </div>
+  <my-layout :formCollapse="formCollapse">
+    <el-form slot="form" :inline="true" size="mini" ref="searchForm" :model="searchForm" class="search_form">
+      <el-form-item label="课程名" prop="courseName">
+        <el-input placeholder="请输入课程名" clearable v-model="searchForm.courseName"
+                  @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item label="课程号" prop="courseId">
+        <el-input placeholder="请输入课程号" clearable v-model="searchForm.courseId"
+                  @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item label="教师名" prop="teacherName">
+        <el-input placeholder="请输入教师名" clearable v-model="searchForm.teacherName"
+                  @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item label="教室" prop="classroom">
+        <el-input placeholder="请输入教室" clearable v-model="searchForm.classroom"
+                  @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item class="form_btn">
+        <el-button type="default" @click="search">查询</el-button>
+        <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
+        <el-button type="text" @click="formCollapse = !formCollapse">
+          {{formCollapse ? '查看更多' : '收起'}}
+          <i :class="[formCollapse ? 'el-icon-caret-bottom' : 'el-icon-caret-top']"></i>
+        </el-button>
+      </el-form-item>
+    </el-form>
+    <template slot-scope="scope" slot="tableLayout">
+      <my-table @getData="getTable" ref="table" :tableData="tableData" :height="scope.height" :totalCount="totalCount">
+        <template slot="tableHead">
+          <el-table-column type="index" :index="computeIndex" label="序号" width="60"
+                           show-overflow-tooltip></el-table-column>
+          <el-table-column prop="courseName" label="课程名" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="courseId" label="课程号" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="teacherName" label="教师名" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="teacherId" label="教师号" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="classroom" label="教室" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="selectedCount" label="已选人数" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="maxCount" label="人数上限" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
+        </template>
+      </my-table>
+    </template>
+  </my-layout>
 </template>
 
 <script>
@@ -50,26 +52,38 @@
     name: 'allCourses',
     data() {
       return {
+        searchForm: {
+          courseName: '',
+          courseId: '',
+          teacherName: '',
+          classroom: ''
+        },
         tableData: [],
         totalCount: 0,
         page: 1,
         count: 10,
+        tableObj: {},
+        formCollapse: false
       }
     },
-    created() {
-      this.getData.call(this, '/teachers/allCourses', {page: this.page, count: this.count})
+    mounted() {
+      this.tableObj = this.$refs['table']
     },
     methods: {
+      getTable(page, count) {
+        this.page = page
+        this.count = count
+        this.getTableData.call(this, '/teachers/allCourses', this.searchForm)
+      },
       computeIndex(index) {
         return (this.page - 1) * this.count + index + 1
       },
-      pageChange(page) {
-        this.getData.call(this, '/teachers/allCourses', {page, count: this.count})
+      // 重置
+      resetForm(formName) {
+        this.$refs[formName].resetFields()
       },
-      countChange(count) {
-        this.count = count
-        this.page = 1
-        this.getData.call(this, '/teachers/allCourses', {page: 1, count})
+      search() {
+        this.tableObj.search()
       }
     },
   }

@@ -1,128 +1,134 @@
 <template>
-  <div>
-    <el-table
-        :data="tableData"
-        stripe
-        height="528px"
-        style="width: 100%">
-      <el-table-column
-          type="index"
-          :index="computeIndex"
-          label="序号"
-          width="180">
-      </el-table-column>
-      <el-table-column
-          prop="teacherName"
-          label="教师名">
-      </el-table-column>
-      <el-table-column
-          prop="username"
-          label="用户名">
-      </el-table-column>
-      <el-table-column
-          prop="teacherId"
-          label="教师号">
-      </el-table-column>
-      <el-table-column
-          prop="phone"
-          label="手机号">
-      </el-table-column>
-      <el-table-column
-          label="操作">
-        <template slot-scope="scope">
-          <el-button size="mini" type="primary" plain @click="updateTeacher(scope.row.teacherId)">修改
-          </el-button>
+  <my-layout :formCollapse="formCollapse">
+    <el-form slot="form" :inline="true" size="mini" ref="searchForm" :model="searchForm" class="search_form">
+      <el-form-item label="教师名" prop="teacherName">
+        <el-input placeholder="请输入教师名" clearable v-model="searchForm.teacherName"
+                  @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item label="用户名" prop="username">
+        <el-input placeholder="请输入用户名" clearable v-model="searchForm.username"
+                  @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item label="教师号" prop="teacherId">
+        <el-input placeholder="请输入教师号" clearable v-model="searchForm.teacherId"
+                  @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item label="手机号" prop="phone">
+        <el-input placeholder="请输入手机号" clearable v-model="searchForm.phone" @keydown.enter.native="search"></el-input>
+      </el-form-item>
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="searchForm.status" placeholder="请选择">
+          <el-option
+              v-for="item in statusOptions"
+              :key="item.value"
+              :label="item.name"
+              :value="item.value">
+          </el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item class="form_btn">
+        <el-button type="default" @click="search">查询</el-button>
+        <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
+        <el-button type="text" @click="formCollapse = !formCollapse">
+          {{formCollapse ? '查看更多' : '收起'}}
+          <i :class="[formCollapse ? 'el-icon-caret-bottom' : 'el-icon-caret-top']"></i>
+        </el-button>
+      </el-form-item>
+    </el-form>
+    <template slot-scope="scope" slot="tableLayout">
+      <my-table @getData="getTable" ref="table" :tableData="tableData" :height="scope.height" :totalCount="totalCount">
+        <template slot="tableHead">
+          <el-table-column type="index" :index="computeIndex" label="序号" width="60"
+                           show-overflow-tooltip></el-table-column>
+          <el-table-column prop="teacherName" label="教师名" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="username" label="用户名" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="teacherId" label="教师号" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="phone" label="手机号" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="sex" label="性别" show-overflow-tooltip></el-table-column>
+          <el-table-column label="状态" show-overflow-tooltip>
+            <template slot-scope="scope">
+              {{ scope.row.status === 1 ? '已启用' : '已禁用'}}
+            </template>
+          </el-table-column>
+          <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
+          <el-table-column fixed="right" label="操作">
+            <template slot-scope="scope">
+              <el-button size="mini" :type="scope.row.status===1?'danger':'success'" plain
+                         @click="updateTeacherStatus(scope.row)">
+                {{ scope.row.status === 1 ? '禁用' : '启用' }}
+              </el-button>
+            </template>
+          </el-table-column>
         </template>
-      </el-table-column>
-    </el-table>
-    <el-pagination
-        style="float: right"
-        background
-        layout="sizes,prev, pager, next,jumper"
-        :current-page="page"
-        @current-change="pageChange"
-        @size-change="countChange"
-        :total="totalCount">
-    </el-pagination>
-  </div>
+      </my-table>
+    </template>
+  </my-layout>
 </template>
 
 <script>
-  import updateTeacherBox from "./updateTeacherBox";
-
   export default {
     name: 'allTeachers',
     data() {
       return {
+        searchForm: {
+          teacherName: '',
+          username: '',
+          teacherId: '',
+          phone: '',
+          status: ''
+        },
         ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),
         tableData: [],
         totalCount: 0,
         selectedCourseId: '',
         page: 1,
         count: 10,
+        tableObj: {},
+        formCollapse: false,
+        statusOptions: [
+          {name: '请选择', value: ''},
+          {name: '已启用', value: 1},
+          {name: '已禁用', value: 0}
+        ]
       }
     },
-    created() {
-      this.getData.call(this,'/admins/allTeachers', {page: this.page, count: this.count})
+    mounted() {
+      this.tableObj = this.$refs['table']
     },
     methods: {
-      updateTeacher(teacherId){
-        const h = this.$createElement;
-        this.$msgbox({
-          title: '消息',
-          message: h(updateTeacherBox, {ref: this.ruleFormIndex}),
-          showCancelButton: true,
-          showConfirmButton: true,
-          beforeClose: (action, instance, done) => {
-            let ruleForm = this.$refs[this.ruleFormIndex]
-            let form = ruleForm.ruleForm
-            let formData
-            if (action === 'confirm') {
-              if (ruleForm.submitForm('ruleForm')) {
-                instance.confirmButtonLoading = true;
-                instance.confirmButtonText = '修改中...';
-                formData = ruleForm.$data.ruleForm
-                this.loading()
-                this.axios.post('/admins/updateTeacher', {
-                  teacherName: formData.teacherName,
-                  phone: formData.phone,
-                  teacherId
-                }).then(r => {
-                  let data = r.data
-                  this.loaded && this.loaded.close()
-                  done();
-                  instance.confirmButtonLoading = false;
-                  for (let k in form) {
-                    form[k] = ''
-                  }
-                  if (data.status === 0) {
-                    this.$message.success(data.message)
-                    this.getData.call(this, '/admins/allTeachers', {page: this.page, count: this.count})
-                  } else {
-                    this.$message.error(data.message)
-                  }
-                }, err => {
-                  this.$err(err)
-                  done();
-                  instance.confirmButtonLoading = false;
-                })
-              }
-            } else {
-              done();
+      getTable(page, count) {
+        this.page = page
+        this.count = count
+        this.getTableData.call(this, '/admins/allTeachers', this.searchForm)
+      },
+      updateTeacherStatus(row) {
+        this.$confirm(`此操作将${row.status === 1 ? '禁用' : '启用'}该用户, 是否继续?`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.axios.post('/admins/updateTeacherStatus', {
+            id: row.teacherId
+          }).then(r => {
+            let data = r.data
+            this.loaded && this.loaded.close()
+            if (data.status === 0) {
+              this.$message.success(data.message)
+              this.tableObj.refresh()
             }
-          }
+          })
         })
       },
       computeIndex(index) {
         return (this.page - 1) * this.count + index + 1
       },
-      pageChange(page) {
-        this.getData.call(this, '/admins/allTeachers', {page, count: this.count})
+      // 重置
+      resetForm(formName) {
+        this.$refs[formName].resetFields()
       },
-      countChange(count) {
-        this.count = count
-        this.page = 1
-        this.getData.call(this, '/admins/allTeachers', {page: 1, count})
+      search() {
+        this.tableObj.search()
       }
     },
   }

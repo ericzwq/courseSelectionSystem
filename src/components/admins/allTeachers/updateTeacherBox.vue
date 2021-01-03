@@ -15,8 +15,8 @@
     data() {
       return {
         ruleForm: {
-          teacherName: '',
-          phone:'',
+          teacherName: this.teacherName,
+          phone: this.phone,
         },
         rules: {
           teacherName: [
@@ -30,6 +30,11 @@
         }
       };
     },
+    mounted() {
+      console.log(this.teacherName)
+      console.log(this)
+    },
+    props: ['teacherName', 'phone'],
     methods: {
       submitForm(formName) {
         let res

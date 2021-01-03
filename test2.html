@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <style>
+    canvas {
+      width: 800px;
+      height: 400px;
+    }
+    table{
+      /*margin-bottom: -100px;*/
+      /*display: none;*/
+      position: absolute;
+      left: -999px;
+      transform: scale(0.1,0.1);
+      /*transform: translateZ(-100px);*/
+      /*z-index: -999;*/
+    }
+  </style>
+</head>
+<a download="pic">下载</a>
+<table style="width: 2000px;" id="my-node" border="1">
+  <tr>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+  </tr>
+  <tr>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+  </tr>
+  <tr>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+  </tr>
+  <tr>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+    <td>上的飞机</td>
+  </tr>
+</table>
+<div style="width: 900px;height: 500px;background: yellow">杀了对方角度来说放假放假立刻电视机反对法</div>
+<body>
+<script type="text/javascript" src="node_modules/dom-to-image/dist/dom-to-image.min.js"></script>
+<script>
+  let node = document.getElementById('my-node');
+  // console.log(new XMLSerializer().serializeToString(node))
+  domtoimage.toPng(node)
+    .then(function (dataUrl) {
+      // let img = new Image();
+      // img.src = dataUrl;
+      // document.body.appendChild(img);
+      document.querySelector('a').href = dataUrl
+    })
+    .catch(function (error) {
+      console.error('oops, something went wrong!', error);
+    });
+</script>
+</body>
+</html>

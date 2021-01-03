@@ -9,10 +9,6 @@
     <el-form-item label="教室" prop="classroom">
       <el-input v-model="ruleForm.classroom"></el-input>
     </el-form-item>
-    <!--    <el-form-item>-->
-    <!--      <el-button type="primary" @click="submitForm('ruleForm')">添加</el-button>-->
-    <!--      <el-button @click="resetForm('ruleForm')">重置</el-button>-->
-    <!--    </el-form-item>-->
   </el-form>
 </template>
 
@@ -35,6 +31,7 @@
             {required: true, message: '请输入人数', trigger: 'blur'},
             {
               validator: (rule, v, callback) => {
+                if (!/^[0-9]+$/.test(v)) return callback(new Error('请输入正整数'))
                 if (isNaN(v)) {
                   callback(new Error('必须为数字'))
                 } else {
@@ -43,7 +40,6 @@
               },
               trigger: 'blur'
             },
-            {min: 1, max: 3, message: '长度在 1 到 3 个字符', trigger: 'blur'}
           ],
           classroom: [
             {required: true, message: '请输入教室', trigger: 'blur'},

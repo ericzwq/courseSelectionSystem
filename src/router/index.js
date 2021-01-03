@@ -11,19 +11,19 @@ const routes = [
   {path: '/findPsw', component: () => import('@/components/common/findPsw.vue'), meta: {title: '找回密码'}},
   {path: '/register', component: () => import('@/components/common/register.vue'), meta: {title: '注册'}},
   {path: '/teachers', redirect: '/courseselection/teachers/allCourses'},
-  {path: '/students', redirect: '/courseselection/students/selectedCourses'},
+  {path: '/students', redirect: '/courseselection/students/myScores'},
   {path: '/admins', redirect: '/courseselection/admins/teachersCourses'},
   {
     path: '/courseselection', component: () => import('@/courseselection.vue'), children: [
       {
         path: 'logout',
         component: () => import('@/components/common/setting.vue'),
-        meta: {title: '设置', auth: true, noLevel: true}
+        meta: {title: '设置', auth: true, noLevel: true,noSearch:true}
       },
       {
         path: 'updatePsw',
         component: () => import('@/components/common/updatePsw.vue'),
-        meta: {title: '修改密码', auth: true, noLevel: true}
+        meta: {title: '修改密码', auth: true, noLevel: true,noSearch:true}
       },
       {
         path: 'teachers/allCourses',
@@ -36,19 +36,24 @@ const routes = [
         meta: {title: '学生成绩', auth: true}
       },
       {
+        path: 'teachers/scoreDetails',
+        component: () => import('@/components/common/scoreDetails.vue'),
+        meta: {title: '成绩详情', auth: true}
+      },
+      {
         path: 'teachers/addedCourses',
         component: () => import('@/components/teachers/addedCourses/addedCourses.vue'),
         meta: {title: '已发课程', auth: true}
       },
       {
-        path: 'students/selectedCourses',
-        component: () => import('@/components/students/selectedCourses/selectedCourses.vue'),
-        meta: {title: '已选课程', auth: true}
-      },
-      {
         path: 'students/myScores',
         component: () => import('@/components/students/myScores/myScores.vue'),
-        meta: {title: '我的成绩', auth: true}
+        meta: {title: '查看成绩', auth: true}
+      },
+      {
+        path: 'students/scoreDetails',
+        component: () => import('@/components/common/scoreDetails.vue'),
+        meta: {title: '成绩详情', auth: true}
       },
       {
         path: 'students/selectCourses',
@@ -66,6 +71,11 @@ const routes = [
         meta: {title: '所有成绩', auth: true}
       },
       {
+        path: 'admins/scoreDetails',
+        component: () => import('@/components/common/scoreDetails.vue'),
+        meta: {title: '成绩详情', auth: true}
+      },
+      {
         path: 'admins/allTeachers',
         component: () => import('@/components/admins/allTeachers/allTeachers.vue'),
         meta: {title: '所有老师', auth: true}
@@ -75,7 +85,7 @@ const routes = [
         component: () => import('@/components/admins/allStudents/allStudents.vue'),
         meta: {title: '所有学生', auth: true}
       },
-      {path: '/', redirect: '/courseselection/students/selectedCourses'}
+      {path: '/', redirect: '/courseselection/students/myScores'}
     ]
   },
   {path: '*', component: () => import('@/components/common/404.vue'), meta: {title: '404'}},

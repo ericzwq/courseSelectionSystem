@@ -1,13 +1,13 @@
 <template>
   <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
     <el-form-item label="旧密码" prop="oldPsw">
-      <el-input type="password" v-model="ruleForm.oldPsw"></el-input>
+      <el-input type="password" v-model="ruleForm.oldPsw" show-password></el-input>
     </el-form-item>
     <el-form-item label="新密码" prop="newPsw">
-      <el-input type="password" v-model="ruleForm.newPsw"></el-input>
+      <el-input type="password" v-model="ruleForm.newPsw" show-password></el-input>
     </el-form-item>
     <el-form-item label="确认密码" prop="checkPsw">
-      <el-input type="password" v-model="ruleForm.checkPsw"></el-input>
+      <el-input type="password" v-model="ruleForm.checkPsw" show-password></el-input>
     </el-form-item>
     <el-form-item>
       <el-button type="primary" @click="submitForm('ruleForm')">确定</el-button>
@@ -77,7 +77,6 @@
             let formData = this.ruleForm
             this.axios.post('/updatePsw', {
               id: sessionStorage.getItem('id'),
-              level: sessionStorage.getItem('level'),
               oldPsw: formData.oldPsw,
               newPsw: formData.newPsw
             }).then(r => {
@@ -88,10 +87,8 @@
                 for (let k in formData) {//清空输入框
                   formData[k] = ''
                 }
-              } else {
-                this.$message.error(data.message)
               }
-            }, err => this.$err(err))
+            })
           } else {
             console.log('error submit!!');
             return false;

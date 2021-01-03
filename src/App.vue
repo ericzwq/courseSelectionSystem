@@ -5,7 +5,7 @@
   export default {
     name: 'App',
     created() {
-      // this.$router.addRoutes([{path: '/ad', component: () => import('@/components/common/setting.vue')}])
+      // this.$bk-router.addRoutes([{path: '/ad', component: () => import('@/components/common/setting.vue')}])
       // console.log(this)
     }
   }
@@ -21,6 +21,7 @@
   a {
     text-decoration: none;
   }
+
   #nprogress .bar {
     background: red !important; /*nprogress自定义颜色*/
   }

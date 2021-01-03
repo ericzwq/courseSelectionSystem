@@ -8,10 +8,10 @@
       <el-input v-model="ruleForm.phone"></el-input>
     </el-form-item>
     <el-form-item label="新密码" prop="newPsw">
-      <el-input type="password" v-model="ruleForm.newPsw"></el-input>
+      <el-input type="password" v-model="ruleForm.newPsw" show-password></el-input>
     </el-form-item>
     <el-form-item label="确认密码" prop="checkPsw">
-      <el-input type="password" v-model="ruleForm.checkPsw"></el-input>
+      <el-input type="password" v-model="ruleForm.checkPsw" show-password></el-input>
     </el-form-item>
     <div class="f-radioBox">
       <el-radio-group v-model="level">
@@ -100,18 +100,20 @@
               password: ruleForm.newPsw
             }).then(r => {
               let data = r.data
-              if (data.status !== 0) return this.$message.error(data.message)
+              if (data.status !== 0) return
               this.$message.success('修改成功，3秒后跳转')
+              sessionStorage.setItem('routers', JSON.stringify(data.routers))
               sessionStorage.setItem('token', data.token)
               sessionStorage.setItem('level', this.level)
               sessionStorage.setItem('id', data.id)
               sessionStorage.setItem('name', data.name)
+              sessionStorage.setItem('sex', data.sex)
               sessionStorage.setItem('username', ruleForm.username)
               sessionStorage.setItem('phone', data.phone)
               setTimeout(() => {
-                this.$router.push('/' + this.level)
+                this.$router.push(this.level)
               }, 3000)
-            }, err => this.$err(err))
+            })
           } else {
             console.log('error submit!!');
             return false;

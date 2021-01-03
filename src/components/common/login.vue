@@ -1,7 +1,7 @@
 <template>
   <form class="l-container">
     <h1 class="l-title">学生选课系统-登录</h1>
-    <el-input v-model="username" placeholder="请输入账号" class="l-username" v-focus></el-input>
+    <el-input v-model="username" placeholder="请输入账号" class="l-username" v-focus @keyup.enter.native="login"></el-input>
     <el-input placeholder="请输入密码" v-model="password" show-password class="l-password"
               @keyup.enter.native="login"></el-input>
     <div class="l-radioBox">
@@ -46,26 +46,27 @@
           let data = r.data
           if (data.status === 0) {
             this.$message.success('登录成功，3秒后挑转~');
+            sessionStorage.setItem('routers', JSON.stringify(data.routers))
             sessionStorage.setItem('token', data.token)
             sessionStorage.setItem('level', this.level)
             sessionStorage.setItem('id', data.id)
             sessionStorage.setItem('name', data.name)
+            sessionStorage.setItem('sex', data.sex)
             sessionStorage.setItem('username', this.username)
             sessionStorage.setItem('phone', data.phone)
             // localStorage.setItem('refreshToken', data.refreshToken)
             setTimeout(() => {
               let path = this.$router.prePath
               if (path === '/' || path === '/register' || path === '/findPsw' || path === '/login' || !path.includes(this.level)) {//路由与身份不一致
-                location.href = location.origin + '/#/' + this.level
+                // location.href = location.origin + '/#/' + this.level
+                this.$router.push(this.level)
               } else {
-                location.href = location.origin + '#' + this.$router.prePath
-                // this.$router.push(this.$router.prePath)
+                // location.href = location.origin + '#' + this.$bk-router.prePath
+                this.$router.push(this.$router.prePath)
               }
             }, 3000)
-          } else {
-            this.$message.error(data.message)
           }
-        }, err => this.$err(err))
+        })
       },
     },
     directives: {
@@ -89,7 +90,7 @@
   .l-container {
     width: 60%;
     margin: 0 auto;
-    padding-top: 80px;
+    padding-top: 20vh;
 
     .l-title {
       text-align: center;

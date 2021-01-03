@@ -16,7 +16,7 @@
       return {
         ruleForm: {
           studentName: '',
-          phone:'',
+          phone: '',
         },
         rules: {
           studentName: [
@@ -30,7 +30,16 @@
         }
       };
     },
+    props:['studentName','phone'],
+    created() {
+      this.getFormData()
+    },
     methods: {
+      getFormData() {
+        let ruleForm = this.ruleForm
+        ruleForm.studentName = this.studentName
+        ruleForm.phone = this.phone
+      },
       submitForm(formName) {
         let res
         this.$refs[formName].validate((valid) => {
@@ -46,6 +55,11 @@
       },
       resetForm(formName) {
         this.$refs[formName].resetFields();
+      }
+    },
+    watch: {
+      studentName() {
+        this.getFormData()
       }
     }
   }
