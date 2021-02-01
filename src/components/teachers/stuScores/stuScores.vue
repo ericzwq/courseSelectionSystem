@@ -51,7 +51,7 @@
       <el-button type="primary" plain size="mini" @click="exportScore(true)">导出全部</el-button>
       <qr-button :searchData="searchForm"></qr-button>
       <el-button type="success" plain size="mini" @click="importScore">导入</el-button>
-      <el-button type="primary" plain size="mini" @click="test">测试</el-button>
+<!--      <el-button type="primary" plain size="mini" @click="test">测试</el-button>-->
       <el-dialog class="init-dialog" title="导入" width="450px" :close-on-click-modal="false"
                  :visible.sync="importDialogVisible">
         <div style="width: 360px;margin: 0 auto;">
@@ -212,8 +212,10 @@
         let {file} = obj
         let data = new FormData()
         data.append('file', file)
+        this.loading()
         this.axios.post('/teachers/upScoreFile?id=' + this.id, data).then(r => {
           if (r.data.status === 0) this.$message.success('导入成功')
+          this.loaded.close()
           this.importDialogVisible = false
           this.$refs['myUpload'].clearFiles()
           this.tableObj.refresh()
@@ -257,6 +259,7 @@
           }).then(r => {
             this.loaded.close()
             if (r.data.status === 0) {
+              this.tableObj.refresh()
               row.score = parseInt(value)
               this.$message.success('添加成功')
             }

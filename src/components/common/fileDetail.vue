@@ -45,7 +45,6 @@
         return /docx|DOCX|xlsx|XLSX|pdf|PDF/.test(filename)
       },
       getFile () {
-        console.log(this.file)
         const { fileName, url } = this.file
         if (this.isVideo(fileName)) {
           this.videoUrl = [this.baseURL + url]

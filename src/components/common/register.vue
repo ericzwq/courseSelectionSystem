@@ -2,20 +2,21 @@
   <el-form class="r-container" :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
     <h1 class="r-title">学生选课系统-注册</h1>
     <el-form-item label="姓名" prop="name">
-      <el-input v-model="ruleForm.name" size="small"></el-input>
+      <el-input v-model.trim="ruleForm.name" size="small"></el-input>
     </el-form-item>
     <el-form-item label="用户名" prop="username">
-      <el-input v-model="ruleForm.username" size="small"></el-input>
+      <el-input v-model.trim="ruleForm.username" size="small"></el-input>
     </el-form-item>
     <el-form-item label="密码" prop="password">
-      <el-input type="password" v-model="ruleForm.password" show-password size="small"></el-input>
+      <el-input type="password" v-model.trim="ruleForm.password" show-password size="small"></el-input>
     </el-form-item>
     <el-form-item label="确认密码" prop="checkPass">
-      <el-input type="password" v-model="ruleForm.checkPass" show-password size="small"></el-input>
+      <el-input type="password" v-model.trim="ruleForm.checkPass" show-password size="small"></el-input>
     </el-form-item>
     <el-form-item label="密保手机" prop="phone">
       <el-input v-model.number="ruleForm.phone" size="small"></el-input>
     </el-form-item>
+    <email :rule-form="ruleForm" :params="emailParams" url="/public/verificationCode" ref="email"></email>
     <el-form-item label="邀请码" prop="invitation">
       <el-input v-model="ruleForm.invitation" size="small"></el-input>
     </el-form-item>
@@ -41,12 +42,14 @@
       </div>
     </div>
     <el-form-item class="r-register">
-      <el-button type="primary" @click="submitForm('ruleForm')">注册</el-button>
-      <el-button @click="resetForm('ruleForm')">重置</el-button>
+      <el-button type="primary" @click="submitForm('ruleForm')" size="mini">注册</el-button>
+      <el-button @click="resetForm('ruleForm')" size="mini">重置</el-button>
     </el-form-item>
   </el-form>
 </template>
 <script>
+  import email from "./email";
+
   export default {
     name: 'register',
     data() {
@@ -87,6 +90,8 @@
           password: '',
           checkPass: '',
           phone: '',
+          email: '',
+          verificationCode: '',
           sex: '',
           invitation: '',
         },
@@ -94,6 +99,7 @@
           {value: '男', label: '男'},
           {value: '女', label: '女'}
         ],
+        emailParams: {isRegister: 1},
         rules: {
           name: [
             {required: true, message: '请输入姓名', trigger: 'blur'}
@@ -108,25 +114,43 @@
             {required: true, validator: checkPassVal, trigger: 'blur'}
           ],
           phone: [
-            {required: true, message: '请输入手机号', trigger: 'blur'},
-            {type: 'number', message: '请输入正确的手机号', trigger: 'blur'}
+            {
+              validator: (rule, v, cb) => {
+                if (!v) return cb('请输入手机号')
+                if (!/\d+/.test(v)) return cb('请输入正确的手机号')
+                if (v.toString().length !== 11) return cb('手机号长度为11')
+                cb()
+              },
+              trigger: 'blur'
+            }
           ],
+          // email: [{
+          //   trigger: 'blur', validator: (rule, value, callback) => {
+          //     if (!value) return callback('请输入邮箱')
+          //     if (!/\w+@\w+.com$/.test(value)) return callback('请输入正确的邮箱')
+          //     callback()
+          //   }
+          // }],
+          // verificationCode: [{require: true, message: '请输入验证码', trigger: 'blur'}],
           invitation: [
             {required: true, message: '请输入邀请码', trigger: 'blur'}
           ],
           sex: [
             {required: true, message: '请选择性别', trigger: 'blur'}
           ]
-        }
+        },
+        isGettingCode: false
       };
     },
     methods: {
       submitForm(formName) {
         this.$refs[formName].validate((valid) => {
-          if (valid) {
+          if (valid && this.$refs['email'].validate()) {
             let ruleForm = this.ruleForm
-            ruleForm.level = this.level
-            this.axios.post('/register', ruleForm).then(r => {
+            this.axios.post('/code/register', {
+              level: this.level,
+              token: sessionStorage.getItem('codeToken'), ...ruleForm
+            }).then(r => {
               let data = r.data
               if (data.status !== 0) return
               this.$message.success('注册成功,3秒后跳转')
@@ -138,6 +162,7 @@
               sessionStorage.setItem('sex', data.sex)
               sessionStorage.setItem('username', ruleForm.username)
               sessionStorage.setItem('phone', data.phone)
+              sessionStorage.setItem('email', data.email)
               setTimeout(() => {
                 this.$router.push(this.level)
               }, 3000)
@@ -151,6 +176,9 @@
       resetForm(formName) {
         this.$refs[formName].resetFields();
       }
+    },
+    components: {
+      email
     }
   }
 </script>
@@ -164,11 +192,11 @@
   .r-container {
     width: 60%;
     margin: 0 auto;
-    padding-top: 20px;
+    padding-top: 40px;
 
     .r-title {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
     }
 
     .r-radioBox {

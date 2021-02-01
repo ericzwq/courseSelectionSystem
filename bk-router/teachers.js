@@ -189,6 +189,7 @@ teacherRouter.post(teachersInterfaces.upScoreFile, function (req, res) {
                   if (results3.changedRows > 0) {
                     res.json({message: '导入成功', status: 0})
                   } else {
+                    console.log(results3)
                     res.json({message: '导入失败，请勿导入已有成绩的学生或表格不符要求', status: 4074})
                   }
                   fs.unlink(file.path, () => console.log('删除导入成绩文件'))

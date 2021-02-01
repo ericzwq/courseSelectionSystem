@@ -5,12 +5,25 @@ let {getJwt, checkParams, getLog, filterQuery, getExcelData, setExcelType, getSc
 let nodeExcel = require('excel-export')
 let fs = require('fs')
 let qrImg = require('qr-image')
-let bodyParser = require('body-parser')
+// let bodyParser = require('body-parser')
 let router = express.Router()
+let nodemailer = require('nodemailer');
+let emailUser = '1872757047@qq.com'
+let transporter = nodemailer.createTransport({
+  service: 'qq',
+  port: 465, // SMTP 端口
+  secureConnection: true, // 使用 SSL
+  auth: {
+    user: emailUser,
+    //smtp密码
+    pass: 'gghpyttasdhcfaae'
+  }
+})
+
 // router.use('/CourseSelectionSystem/views/', express.static('/CourseSelectionSystem/views/'))
 router.use('/bk-assets/', express.static(path.join(__dirname, '../bk-assets')))
-router.use(bodyParser.json())
-router.use(bodyParser.urlencoded({extended: false}))
+// router.use(bodyParser.json())
+// router.use(bodyParser.urlencoded({extended: false}))
 let os = require('os')
 let key = Object.keys(os.networkInterfaces())[0]
 let ip = os.networkInterfaces()[key][1].address
@@ -185,13 +198,13 @@ router.post(commonInterfaces.login, function (req, res) {
     return res.json({message: '未知的身份', status: 4056, notLogin: true})
   }
   querySql(function (connection) {
-    connection.query(`SELECT password,id,phone,name,status,sex FROM ${level} WHERE username = '${body.username}' LIMIT 1;`,
+    connection.query(`SELECT password,id,phone,email,name,status,sex FROM ${level} WHERE username = '${body.username}' LIMIT 1;`,
       function (error, results) {
         if (error) throw error
         if (results.length === 0) return res.json({message: '用户名不存在', status: 4057})
         let sqlData = results[0]
         let password = sqlData.password
-        if (sqlData.status !== 1) return res.json({message: '该账户已禁用！', status: 4084})
+        if (sqlData.status !== 1) return res.json({message: '账号已禁用！请联系管理员', status: 4084})
         if (body.password !== password) return res.json({message: '密码错误', status: 4058})
         res.json({
           message: '登录成功',
@@ -201,11 +214,65 @@ router.post(commonInterfaces.login, function (req, res) {
           status: 0,
           id: sqlData.id,
           phone: sqlData.phone,
+          email: sqlData.email,
           name: sqlData.name,
           sex: sqlData.sex
         })
       })
   })
+})
+
+function getVerificationCode(req, res, isAuth) {
+  let query = req.query
+  let email = query.email
+  if (!checkParams(res, [paramsConfig.email, paramsConfig.isRegister], query, 4099)) return
+  if (isAuth) {
+    getLog('get-->/public/authVerificationCode: ', query)
+  } else {
+    getLog('get-->/public/verificationCode: ', query)
+  }
+  if (isAuth && !checkParams(res, [paramsConfig.username], query, 5004)) return // 非注册验证用户名
+  let levels = ['students', 'teachers', 'admins']
+  let sql = ''
+  levels.forEach(i => {
+    sql += `SELECT email FROM ${i} WHERE email = '${email}' ${isAuth ? 'AND username = \'' + query.username + '\'' : ''} LIMIT 1;`
+  })
+  querySql(function (connection) {
+    connection.query(sql, function (error, results) {
+      if (error) return res.json({message: '查询数据失败', status: 5002})
+      if (!isAuth) { // 注册
+        if (results.flat(Infinity).length > 0) return res.json({message: '该邮箱已注册', status: 5003})
+      } else {
+        if (results.flat(Infinity).length < 1) return res.json({message: '用户名与邮箱不匹配', status: 5005})
+      }
+      let code = Math.random().toString().substr(-6)
+      console.log('code:', code, 'time:', new Date())
+      let mailOptions = {
+        from: emailUser, // 发件地址
+        to: email, // 收件列表
+        subject: '选课系统', // 标题
+        //text和html两者只支持一种
+        text: '您的验证码为：' + code + '，有效期为10分钟，请尽快使用', // 标题
+        // html: '<b>Hello world ?</b>' // html 内容
+      }
+
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) return res.json({message: '发送失败', status: 5000})
+        let secret = (isAuth ? query.username.toString() : '') + code
+        let token = getJwt({username: query.username}, secret, 600)
+        res.json({message: '验证码发送成功', status: 0, token})
+      });
+    })
+  })
+}
+
+/*注册获取邮箱验证码*/
+router.get(commonInterfaces.verificationCode, function (req, res) {
+  getVerificationCode(req, res, false)
+})
+/*找回密码获取邮箱验证码*/
+router.get(commonInterfaces.authVerificationCode, function (req, res) {
+  getVerificationCode(req, res, true)
 })
 /*注册-->学生邀请码111 教师222 管理员333*/
 router.post(commonInterfaces.register, function (req, res) {
@@ -214,17 +281,17 @@ router.post(commonInterfaces.register, function (req, res) {
   let level = body.level
   getLog('post-->register: ', body)
   if (!checkParams(res, [paramsConfig.invitation, paramsConfig.level, paramsConfig.name, paramsConfig.username,
-    paramsConfig.password, paramsConfig.phone, paramsConfig.sex], body, 4059)) return
+    paramsConfig.password, paramsConfig.phone, paramsConfig.sex, paramsConfig.email], body, 4059)) return
   /*验证邀请码*/
   if ((level === 'students' && invitation !== '111') || (level === 'teachers' && invitation !== '222') ||
-    (level === 'admins') && invitation !== '333') return res.json({message: '邀请码错误', status: 1})
+    (level === 'admins') && invitation !== '333') return res.json({message: '邀请码错误', status: 5009})
   querySql(function (connection) {
     connection.query(`SELECT count(1) as count FROM ${body.level} WHERE username = '${body.username}'`, function (error, results) {
       if (error) throw error
-      if (results.flat(Infinity).length === 0) return res.json({message: '暂无数据', status: 1})
-      if (results[0].count > 0) return res.json({message: '用户名已存在', status: 1})
-      connection.query(`INSERT ${level}(name,sex, phone, username,password) VALUES(?,?,?,?,?);`,
-        [body.name, body.sex, body.phone, body.username, body.password], function (error2, results2) {
+      if (results.flat(Infinity).length === 0) return res.json({message: '暂无数据', status: 5010})
+      if (results[0].count > 0) return res.json({message: '用户名已存在', status: 5011})
+      connection.query(`INSERT ${level}(name, sex, phone, email, username, password) VALUES(?,?,?,?,?,?);`,
+        [body.name, body.sex, body.phone, body.email, body.username, body.password], function (error2, results2) {
           if (error2) throw error2
           if (results2.affectedRows > 0) {
             res.json({
@@ -232,12 +299,14 @@ router.post(commonInterfaces.register, function (req, res) {
               token: getJwt(body, level + results2.insertId + encodeURIComponent(body.name), 3600 * 12),
               status: 0,
               name: body.name,
+              phone: body.phone,
+              email: body.email,
               routers: level === 'admins' ? adminRouters : level === 'teachers' ? teacherRouters : studentRouters,
               id: results2.insertId,
               sex: body.sex
             })
           } else {
-            res.json({message: '注册失败', status: 1})
+            res.json({message: '注册失败', status: 5012})
           }
         })
     })
@@ -248,15 +317,15 @@ router.post(commonInterfaces.findPsw, function (req, res) {
   let body = req.body
   let level = body.level
   getLog('post-->findPsw: ', body)
-  if (!checkParams(res, [paramsConfig.level, paramsConfig.username, paramsConfig.password, paramsConfig.phone], body, 4060)) return
+  if (!checkParams(res, [paramsConfig.level, paramsConfig.username, paramsConfig.password, paramsConfig.email], body, 4060)) return
   querySql(function (connection) {
-    connection.query(`SELECT count(1) as count,phone,id,name,sex,status FROM ${level} WHERE username = ?`, [body.username],
+    connection.query(`SELECT count(1) as count,phone,email,id,name,sex,status FROM ${level} WHERE username = ?`, [body.username],
       function (error, results) {
         if (error) throw error
         let sqlData = results[0]
-        if (sqlData.count === 0) return res.json({message: '用户名不存在', status: 4061})
+        if (sqlData.count === 0) return res.json({message: '该用户不存在', status: 4061})
         if (sqlData.status !== 1) return res.json({message: '该账户已禁用！', status: 4085})
-        if (sqlData.phone !== body.phone) return res.json({message: '密保手机错误', status: 4062})
+        if (sqlData.email !== body.email) return res.json({message: '邮箱与用户名不匹配', status: 4062})
         connection.query(`UPDATE ${level} SET password=? WHERE username=?`, [body.password, body.username], function (error2, results2) {
           if (error2) return res.json({message: '修改失败', status: 4063})
           if (results2.affectedRows > 0) {
@@ -267,6 +336,7 @@ router.post(commonInterfaces.findPsw, function (req, res) {
               routers: level === 'admins' ? adminRouters : level === 'teachers' ? teacherRouters : studentRouters,
               id: sqlData.id,
               phone: sqlData.phone,
+              email: sqlData.email,
               name: sqlData.name,
               sex: sqlData.sex
             })

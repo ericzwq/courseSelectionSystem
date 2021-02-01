@@ -42,7 +42,9 @@ exports.paramsConfig = {
   scoreIds: {k: 'scoreIds', type: 'array'},
   scoreId: {k: 'scoreId'},
   sex: {k: 'sex', type: 'string', max: 1},
-  materialId: {k: 'materialId'}
+  materialId: {k: 'materialId'},
+  email: {k: 'email', type: 'email'},
+  isRegister: {k: 'isRegister', type: 'enum', enum: ['0', '1']}
 }
 exports.upScoreDetailsDir = './bk-assets/upload/scoreDetails'
 
@@ -142,20 +144,30 @@ exports.studentExportScoreCol = [
     width
   }
 ]
-exports.Student = '_students'
-exports.Teacher = '_teachers'
-exports.Admin = '_admins'
-exports.Course = '_courses'
-exports.Score = '_scores'
+exports.Student = 'students'
+exports.Teacher = 'teachers'
+exports.Admin = 'admins'
+exports.Course = 'courses'
+exports.Score = 'scores'
 exports.Material = 'materials'
 
 let studentsPrefix = '/api/students/'
 let teachersPrefix = '/api/teachers/'
 let adminsPrefix = '/api/admins/'
+
+/*
+* /api/public     无需验证
+* /api/code       需验证邮箱验证码
+* /api/authCode   需验证用户名的邮箱验证码
+* /api/qr         二维码，需验证token
+* /api/...        需验证token
+*/
 let commonInterfaces = {
-  login: '/api/login', // 登录
-  register: '/api/register', // 注册
-  findPsw: '/api/findPsw', // 找回密码
+  login: '/api/public/login', // 登录
+  register: '/api/code/register', // 注册
+  verificationCode: '/api/public/verificationCode', // 注册获取邮箱验证码
+  authVerificationCode: '/api/public/authVerificationCode', // 找回密码获取邮箱验证码(需认证用户名)
+  findPsw: '/api/authCode/findPsw', // 找回密码(需认证用户名的验证码)
   updatePsw: '/api/updatePsw', // 修改密码
   exportStudentScore: '/api/exportStudentScores', // 老师，管理员导出学生成绩
   getScoreDetails: '/api/scoreDetails', // 学生,老师,管理员获取成绩详情

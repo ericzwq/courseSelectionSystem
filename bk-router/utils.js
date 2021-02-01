@@ -49,6 +49,10 @@ exports.checkParams = function (res, config, params, status) {
       for (let j = 0; j < v.length; j++) {
         if (!numReg.test(v[j])) return res.json({message: `参数${k}的子项须为正整数`, status}) === 1
       }
+    } else if (type && type === 'email') { // 邮箱
+      if (!/\w+@\w+.com$/.test(v)) return res.json({message: '邮箱格式错误', status}) === 1
+    } else if (type && type === 'enum') { // 枚举
+      if (item['enum'].indexOf(v) < 0) return res.json({message: `参数${k}的值非法`, status}) === 1
     } else { //默认为正整数
       if (!numReg.test(v)) return res.json({message: `参数${k}须为正整数`, status}) === 1
       if (fixed) continue

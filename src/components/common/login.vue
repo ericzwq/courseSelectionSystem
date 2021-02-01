@@ -37,7 +37,7 @@
         if (this.username === '') return this.$message.error('请输入用户名')
         if (this.password === '') return this.$message.error('请输入密码')
         this.loading()
-        this.axios.post('/login', {
+        this.axios.post('/public/login', {
           username: this.username,
           password: this.password,
           level: this.level
@@ -54,6 +54,7 @@
             sessionStorage.setItem('sex', data.sex)
             sessionStorage.setItem('username', this.username)
             sessionStorage.setItem('phone', data.phone)
+            sessionStorage.setItem('email', data.email)
             // localStorage.setItem('refreshToken', data.refreshToken)
             setTimeout(() => {
               let path = this.$router.prePath

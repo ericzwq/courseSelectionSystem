@@ -28,7 +28,8 @@ create table teachers
     sex       varchar(2)                         not null,
     username  varchar(20)                        not null,
     phone     varchar(20)                        not null,
-    password  varchar(50)                        not null,
+    email     varchar(30)                        not null,
+    password  varchar(20)                        not null,
     status    int(1)                                      default 1,
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
@@ -42,8 +43,9 @@ create table students
     name      varchar(20)                        not null,
     sex       varchar(2)                         not null,
     phone     varchar(20)                        not null,
+    email     varchar(30)                        not null,
     username  varchar(20)                        not null,
-    password  varchar(50)                        not null,
+    password  varchar(20)                        not null,
     status    int(1)                                      default 1,
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
@@ -72,7 +74,8 @@ create table admins
     sex       varchar(2)                         not null,
     username  varchar(20)                        not null,
     phone     varchar(20)                        not null,
-    password  varchar(50)                        not null,
+    email     varchar(30)                        not null,
+    password  varchar(20)                        not null,
     status    int(1)                                      default 1,
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
@@ -96,17 +99,17 @@ create table materials
 insert courses(name, teacherId, classroom, selectedCount, maxCount, createdBy)
 values ('生物科学', 1, '6教学楼', 0, 100, '李杰1');
 
-insert teachers(name, sex, username, phone, password)
-values ('李杰', '男', 'teacher', '18945948394', '123456');
+insert teachers(name, sex, username, phone, email, password)
+values ('李杰', '男', 'teacher', '18945948394', '231396236@qq.com', '123456');
 
-insert students(name, sex, phone, username, password)
-values ('孙无', '男', '15593749832', 'student', '123456');
+insert students(name, sex, phone, username, email, password)
+values ('孙无', '男', '15593749832', 'student', '231396236@qq.com', '123456');
 
 insert scores(studentId, courseId, score, createdBy)
 values (1, 1, 90, '李杰1');
 
-insert admins(name, sex, username, phone, password)
-values ('管理员', '男', 'admin', '18948394839', '123456');
+insert admins(name, sex, username, phone, email, password)
+values ('管理员', '男', 'admin', '18948394839', '231396236@qq.com', '123456');
 
 insert materials(fileName, url, size, scoreId, createdBy)
 values ('成绩详情', 'http://localhost:3000/bk-assets/upload/1.png', 14599, 1, '李杰1');

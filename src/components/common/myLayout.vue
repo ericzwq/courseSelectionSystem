@@ -12,15 +12,6 @@
     name: 'myLayout',
     data() {
       return {
-        searchForm: {
-          courseName: '',
-          teacherName: '',
-          classroom: ''
-        },
-        ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),
-        tableData: [],
-        totalCount: 0,
-        selectedCourseId: '',
         page: 1,
         count: 10,
         tableHeight: null,
@@ -61,6 +52,7 @@
           if (inputs[i].$el.classList.contains('form_btn')) continue
           inputs[i].$el.style.display = v ? 'none' : 'inline-block'
         }
+        this.computeLayout()
       }
     },
     mounted() {
@@ -68,7 +60,10 @@
     },
     updated() {
       this.toggleBtnDisplay(this.formCollapse)
-      this.computeLayout()
+      // this.computeLayout()
+      document.body.onresize = () => {
+        this.computeLayout()
+      }
     },
     // watch: {
     //   formCollapse(newV) {

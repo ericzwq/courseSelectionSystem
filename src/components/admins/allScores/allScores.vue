@@ -119,6 +119,7 @@
         this.loading()
         this.axios.post('/exportStudentScores', {
           scoreIds,
+          ...this.searchForm,
           all: all ? 1 : 0,
           page: this.page,
           count: this.count
