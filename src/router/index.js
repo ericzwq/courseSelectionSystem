@@ -6,7 +6,7 @@ import 'nprogress/nprogress.css'
 Vue.use(VueRouter)
 
 const routes = [
-  {path: '/', redirect: '/login'},
+  {path: '/', redirect: '/courseselection/index'},
   {path: '/login', component: () => import('@/components/common/login.vue'), meta: {title: '登录'}},
   {path: '/findPsw', component: () => import('@/components/common/findPsw.vue'), meta: {title: '找回密码'}},
   {path: '/register', component: () => import('@/components/common/register.vue'), meta: {title: '注册'}},
@@ -15,15 +15,16 @@ const routes = [
   {path: '/admins', redirect: '/courseselection/admins/teachersCourses'},
   {
     path: '/courseselection', component: () => import('@/courseselection.vue'), children: [
+      {path: 'index', component: () => import('@/components/common/index.vue')},
       {
         path: 'logout',
         component: () => import('@/components/common/setting.vue'),
-        meta: {title: '设置', auth: true, noLevel: true,noSearch:true}
+        meta: {title: '设置', auth: true, noLevel: true}
       },
       {
         path: 'updatePsw',
         component: () => import('@/components/common/updatePsw.vue'),
-        meta: {title: '修改密码', auth: true, noLevel: true,noSearch:true}
+        meta: {title: '修改密码', auth: true, noLevel: true}
       },
       {
         path: 'teachers/allCourses',
@@ -85,7 +86,8 @@ const routes = [
         component: () => import('@/components/admins/allStudents/allStudents.vue'),
         meta: {title: '所有学生', auth: true}
       },
-      {path: '/', redirect: '/courseselection/students/myScores'}
+      // {path: '/', redirect: '/courseselection/students/myScores'}
+      {path: '/', redirect: '/courseselection/index'}
     ]
   },
   {path: '*', component: () => import('@/components/common/404.vue'), meta: {title: '404'}},
@@ -101,11 +103,11 @@ router.beforeEach((to, from, next) => {
     console.log('no token')
     return next('/login')
   }//没有token
-  if (!to.meta.noLevel && to.meta.auth && !to.fullPath.includes(sessionStorage.getItem('level'))) {//路由与session中身份不匹配
+  if (!to.meta.noLevel && to.meta.auth && !to.fullPath.includes(sessionStorage.getItem('level'))) { // 路由与session中身份不匹配
     console.log('wrong level')
     return next('/login')
   }
-  if (to.fullPath === '/login') router.prePath = from.fullPath//如果去登录页，则记录旧路由
+  if (to.fullPath === '/login') router.prePath = from.fullPath // 如果去登录页，则记录旧路由
   if (!router.oldRoute) {
     if (oldPath.includes('/admins')) {
       router.oldRoute = 'admins'

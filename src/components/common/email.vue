@@ -21,7 +21,7 @@
 <script>
   export default {
     name: "email",
-    props: ['ruleForm', 'url','params', 'validator'],
+    props: ['ruleForm', 'url', 'params', 'validator'],
     data() {
       return {
         isGettingCode: false
@@ -35,8 +35,10 @@
           return this.$message.error('请输入邮箱')
         } else if (!/\w+@\w+.com$/.test(email)) {
           return this.$message.error('请输入正确的邮箱')
+        } else if (email.length > 18) {
+          return this.$message.error('长度须小于或等于18')
         }
-        this.axios.get(this.url, {params: {email,...this.params}}).then(r => {
+        this.axios.get(this.url, {params: {email, ...this.params}}).then(r => {
           let data = r.data
           if (data.status !== 0) return
           this.$message.success('验证码已发送至您的邮箱')

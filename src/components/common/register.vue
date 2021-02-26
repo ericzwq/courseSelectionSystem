@@ -53,13 +53,6 @@
   export default {
     name: 'register',
     data() {
-      let usernameVal = (rule, value, callback) => {
-        if (!value) {
-          return callback(new Error('请输入用户名'))
-        } else {
-          callback()
-        }
-      }
       let passVal = (rule, value, callback) => {
         if (value === '') {
           callback(new Error('请输入密码'))
@@ -102,13 +95,15 @@
         emailParams: {isRegister: 1},
         rules: {
           name: [
-            {required: true, message: '请输入姓名', trigger: 'blur'}
+            {required: true, message: '请输入姓名', trigger: 'blur'},
+            {max: 18, message: '长度须小于或等于18', trigger: 'blur'}
           ],
           username: [
-            {required: true, validator: usernameVal, trigger: 'blur'}
+            {required: true, message: '请输入用户名', trigger: 'blur'},
+            {max: 18, message: '长度须小于或等于18', trigger: 'blur'}
           ],
           password: [
-            {required: true, validator: passVal, trigger: 'blur'}
+            {required: true, validator: passVal, trigger: 'blur'},
           ],
           checkPass: [
             {required: true, validator: checkPassVal, trigger: 'blur'}
@@ -133,7 +128,8 @@
           // }],
           // verificationCode: [{require: true, message: '请输入验证码', trigger: 'blur'}],
           invitation: [
-            {required: true, message: '请输入邀请码', trigger: 'blur'}
+            {required: true, message: '请输入邀请码', trigger: 'blur'},
+            {min:3,max: 54, message: '长度须在3-54', trigger: 'blur'}
           ],
           sex: [
             {required: true, message: '请选择性别', trigger: 'blur'}

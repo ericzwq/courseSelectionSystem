@@ -76,7 +76,6 @@
             this.loading()
             let formData = this.ruleForm
             this.axios.post('/updatePsw', {
-              id: sessionStorage.getItem('id'),
               oldPsw: formData.oldPsw,
               newPsw: formData.newPsw
             }).then(r => {

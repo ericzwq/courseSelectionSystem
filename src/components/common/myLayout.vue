@@ -3,6 +3,7 @@
     <slot name="form"></slot>
     <slot name="tableBtn"></slot>
     <slot name="tableLayout" :height="tableHeight"></slot>
+    <slot></slot>
   </div>
 </template>
 
@@ -25,22 +26,25 @@
         // 计算搜索按钮位置
         if (slots['form']) {
           let form = this.$slots.form[0].child
-          let inputWidth = form.$children[0].$el.clientWidth + 10 // +margin
-          // let inputCount = form.$children.length - 1
-          let inputCount = form.$children.filter(i => i.$el.style.display !== 'none').length - 1 // 显示的输入框总数
-          let formWidth = form.$el.clientWidth
-          // let btn = form.$children[inputCount].$el
-          let btn = form.$children.find(i => i.$el.classList.contains('form_btn'))
-          let lineNum = Math.floor(formWidth / inputWidth) //每行最多输入框数
-          this.lineNum = lineNum
-          let lastLineNum = inputCount % lineNum //最后一行放几个
-          if (btn && btn.$el) btn.$el.style.marginLeft = (lineNum - lastLineNum - 1) * inputWidth + 100 + 'px' // 100 为label宽度
-          // 计算表格高度
-          let winHeight = document.documentElement.clientHeight
-          let headerHeight = 50
-          let formHeight = slots['form'] ? slots['form'][0].child.$el.clientHeight : 0
-          let tableBtnHeight = slots['tableBtn'] ? slots['tableBtn'][0].child.$el.clientHeight : 0
-          this.tableHeight = winHeight - headerHeight - formHeight - tableBtnHeight - 80 + 'px'
+          let inputs = form.$children
+          if (inputs.length > 0){
+            let inputWidth = inputs[0].$el.clientWidth + 10 // +margin
+            // let inputCount = form.$children.length - 1
+            let inputCount = form.$children.filter(i => i.$el.style.display !== 'none').length - 1 // 显示的输入框总数
+            let formWidth = form.$el.clientWidth
+            // let btn = form.$children[inputCount].$el
+            let btn = form.$children.find(i => i.$el.classList.contains('form_btn'))
+            let lineNum = Math.floor(formWidth / inputWidth) //每行最多输入框数
+            this.lineNum = lineNum
+            let lastLineNum = inputCount % lineNum //最后一行放几个
+            if (btn && btn.$el) btn.$el.style.marginLeft = (lineNum - lastLineNum - 1) * inputWidth + 100 + 'px' // 100 为label宽度
+            // 计算表格高度
+            let winHeight = document.documentElement.clientHeight
+            let headerHeight = 50
+            let formHeight = slots['form'] ? slots['form'][0].child.$el.clientHeight : 0
+            let tableBtnHeight = slots['tableBtn'] ? slots['tableBtn'][0].child.$el.clientHeight : 0
+            this.tableHeight = winHeight - headerHeight - formHeight - tableBtnHeight - 80 + 'px'
+          }
         }
       },
       toggleBtnDisplay(v) {

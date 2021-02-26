@@ -55,8 +55,7 @@
       </el-form-item>
     </el-form>
     <template slot-scope="scope" slot="tableLayout">
-      <my-table @getData="getTable" ref="table" :tableData="tableData" :height="scope.height" :totalCount="totalCount"
-                @selection-change="selectChange">
+      <my-table @getData="getTable" ref="table" :tableData="tableData" :height="scope.height" :totalCount="totalCount">
         <template slot="tableHead">
           <el-table-column type="index" :index="computeIndex" label="序号" width="60"
                            show-overflow-tooltip></el-table-column>
@@ -85,7 +84,7 @@
           <el-table-column fixed="right" label="操作" v-if="level!=='students'">
             <template slot-scope="scope">
               <el-button @click="deleteScoreDetail(scope.row)"
-                         v-if="(level==='teachers'&&id===scope.row.teacherId)||level==='admins'" size="mini"
+                         v-if="(level==='teachers' && id===scope.row.teacherId)||level==='admins'" size="mini"
                          type="danger" plain class="updateScore">删除
               </el-button>
               <el-button size="mini" disabled plain v-else>无</el-button>
@@ -159,65 +158,14 @@
       this.tableObj = this.$refs['table']
     },
     methods: {
-      submitUpload(obj) {  // 上传
-        let {file} = obj
-        let data = new FormData()
-        data.append('file', file)
-        this.axios.post('/teachers/upScoreFile?id=' + this.id, data).then(r => {
-          if (r.data.status === 0) {
-            this.$message.success('导入成功')
-            this.tableObj.refresh()
-          }
-          this.importDialogVisible = false
-        })
-      },
-      onTemplateDownload() { // 模板下载
-        if (this.multipleSelection.length < 1) return this.$message.error('请先勾选相应的项目再下载模板')
-        let scoreIds = []
-        this.multipleSelection.forEach(i => scoreIds.push(i.scoreId))
-        this.axios.post('/teachers/template', {scoreIds: scoreIds}, {responseType: 'blob'}).then(r => {
-          downloadFile(r.data, '学生成绩模板')
-        })
-      },
-      importScore() {
-        this.importDialogVisible = true
-      },
       getTable(page, count) {
         this.page = page
         this.count = count
-        this.searchForm.id = this.id
         this.getTableData.call(this, '/scoreDetails', this.searchForm, (data) => {
           data[0].forEach(i => {
             let kb = i.size / 1024 + ''
             let dot = kb.indexOf('.')
             i.size = kb.substring(0, dot + 3) + 'kb'
-          })
-        })
-      },
-      addScore(row) {
-        this.$prompt('请输入分数(添加后不可修改)', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          inputPattern: /^[0-9]+$/,
-          inputErrorMessage: '格式不正确',
-          inputValidator: function (v) {
-            if (v < 0 || v > 100) {
-              return '分数超过限制'
-            }
-          }
-        }).then(({value}) => {
-          this.loading()
-          this.axios.post('/teachers/addScore', {
-            studentId: row.studentId,
-            courseId: row.courseId,
-            score: parseInt(value),
-            id: this.id
-          }).then(r => {
-            this.loaded.close()
-            if (r.data.status === 0) {
-              row.score = parseInt(value)
-              this.$message.success('添加成功')
-            }
           })
         })
       },
@@ -227,7 +175,7 @@
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          this.axios.post('/deleteScoreDetail', {materialId: row.materialId, id: this.id}).then(r => {
+          this.axios.post('/deleteScoreDetail', {materialId: row.materialId}).then(r => {
             let data = r.data
             this.loaded && this.loaded.close()
             if (data.status === 0) {
@@ -238,10 +186,6 @@
           })
         })
       },
-      selectChange(val) {
-        this.multipleSelection = val
-        if (val.length > 0) this.exportDisabled = false
-      },
       computeIndex(index) {
         return (this.page - 1) * this.count + index + 1
       },
@@ -251,13 +195,6 @@
       },
       search() {
         this.tableObj.search()
-      },
-      // 上传成功
-      onUploadFiles() {
-        this.addDialogVisible = false
-        this.$message.success('上传成功')
-        this.clearFiles = true
-        this.tableObj.refresh()
       }
     },
     components: {
