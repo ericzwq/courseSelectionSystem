@@ -49,13 +49,14 @@
               <span>{{scope.row.score === -1 ? '暂无' : scope.row.score}}</span>
             </template>
           </el-table-column>
+          <el-table-column prop="classTime" label="开课时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
           <el-table-column fixed="right" label="操作">
-            <template slot-scope="scope">
-              <el-button size="mini" type="danger" plain v-if="scope.row.score===-1"
-                         @click="unselect(scope.row.courseId)">退选
+            <template slot-scope="{row}">
+              <el-button size="mini" type="danger" plain v-if="new Date(row.classTime).getTime() > Date.now()"
+                         @click="unselect(row.courseId)">退选
               </el-button>
               <el-button size="mini" disabled plain v-else>无</el-button>
             </template>
@@ -67,6 +68,7 @@
 </template>
 <script>
   import {downloadFile} from '@/utils/tools.js'
+  import {scoreOptions} from '@/utils/dictionary.js'
   import qrButton from "@/components/common/qrButton.vue";
   export default {
     name: 'selectedCourses',
@@ -77,16 +79,7 @@
           teacherName: '',
           scoreCode: ''
         },
-        scoreOptions: [
-          {name: '请选择', value: ''},
-          {name: '特优(90以上)', value: 1},
-          {name: '优(80-89)', value: 2},
-          {name: '良(70-79)', value: 3},
-          {name: '及格(60-69)', value: 4},
-          {name: '不及格(60以下)', value: 5},
-          {name: '无成绩', value: 6}
-        ],
-        id: sessionStorage.getItem('id'),
+        scoreOptions,
         tableData: [],
         totalCount: 0,
         page: 1,
@@ -104,7 +97,6 @@
       getTable(page, count) {
         this.page = page
         this.count = count
-        this.searchForm.id = this.id
         this.getTableData.call(this, '/students/myScores', this.searchForm)
       },
       // 退选
@@ -115,14 +107,13 @@
           type: 'warning'
         }).then(() => {
           this.axios.post('/students/deleteCourse', {
-            id: this.id,
             courseId
           }).then(r => {
             let data = r.data
             if (data.status === 0) {
               this.$message.success(data.message)
-              this.tableObj.refresh()
             }
+            this.tableObj.refresh()
           })
         }).catch(() => {
           this.$message({
@@ -138,7 +129,7 @@
         this.multipleSelection.forEach(i => scoreIds.push(i.scoreId))
         this.loading()
         this.axios.post('/students/exportScore', {
-          id: this.id, scoreIds, all: all ? 1 : 0, page: this.page, count: this.count
+          scoreIds, all: all ? 1 : 0, page: this.page, count: this.count
         }, {responseType: 'blob'}).then(r => {
           this.exporting = false
           downloadFile(r.data, '我的成绩')

@@ -29,7 +29,8 @@
     <template slot-scope="scope" slot="tableLayout">
       <my-table @getData="getTable" ref="table" :tableData="tableData" :height="scope.height" :totalCount="totalCount">
         <template slot="tableHead">
-          <el-table-column type="index" :index="computeIndex" label="序号" width="60" show-overflow-tooltip></el-table-column>
+          <el-table-column type="index" :index="computeIndex" label="序号" width="60"
+                           show-overflow-tooltip></el-table-column>
           <el-table-column prop="courseName" label="课程名" show-overflow-tooltip></el-table-column>
           <el-table-column prop="courseId" label="课程号" show-overflow-tooltip></el-table-column>
           <el-table-column prop="teacherName" label="教师名" show-overflow-tooltip></el-table-column>
@@ -37,6 +38,7 @@
           <el-table-column prop="classroom" label="教室" show-overflow-tooltip></el-table-column>
           <el-table-column prop="selectedCount" label="已选人数" show-overflow-tooltip></el-table-column>
           <el-table-column prop="maxCount" label="人数上限" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="classTime" label="开课时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
@@ -61,7 +63,7 @@
       return {
         searchForm: {
           courseName: '',
-          courseId:'',
+          courseId: '',
           teacherName: '',
           classroom: ''
         },
@@ -90,7 +92,12 @@
           title: '消息',
           message: h(updateTeacherCourses, {
             ref: this.ruleFormIndex,
-            props: {courseName: row.courseName, classroom: row.classroom, maxCount: row.maxCount}
+            props: {
+              courseName: row.courseName,
+              classroom: row.classroom,
+              maxCount: row.maxCount,
+              classTime: row.classTime
+            }
           }),
           showCancelButton: true,
           showConfirmButton: true,
@@ -109,7 +116,8 @@
                   maxCount: formData.maxCount,
                   classroom: formData.classroom,
                   courseId: row.courseId,
-                  teacherId: row.teacherId
+                  // teacherId: row.teacherId
+                  classTime: formData.classTime
                 }).then(r => {
                   let data = r.data
                   this.loaded && this.loaded.close()
@@ -121,8 +129,6 @@
                   if (data.status === 0) {
                     this.$message.success(data.message)
                     this.tableObj.refresh()
-                  } else {
-                    this.$message.error(data.message)
                   }
                 }, err => {
                   done();

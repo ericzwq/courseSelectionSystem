@@ -35,13 +35,15 @@
             {required: true, message: '请输入人数上限', trigger: 'blur'},
             {
               validator: (r, v, cb) => {
-                if (!/^\d+$/.test(v)) {
-                  cb(new Error('请输入正整数'))
-                } else if (v > 999 || v < 0) {
-                  cb(new Error('请输入1-3位的数字'))
-                } else {
-                  cb()
-                }
+                if (!/^[1-9]\d{0,2}$/.test(v)) return cb(new Error('请输入3位及3位以下正整数'))
+                cb()
+                // if (!/^\d+$/.test(v)) {
+                //   cb(new Error('请输入正整数'))
+                // } else if (v > 999 || v < 0) {
+                //   cb(new Error('请输入1-3位的数字'))
+                // } else {
+                //   cb()
+                // }
               }, trigger: 'blur'
             }
           ]

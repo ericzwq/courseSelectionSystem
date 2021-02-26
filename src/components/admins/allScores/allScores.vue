@@ -46,7 +46,8 @@
                 @selection-change="selectChange">
         <template slot="tableHead">
           <el-table-column type="selection"></el-table-column>
-          <el-table-column type="index" :index="computeIndex" label="序号" width="60" show-overflow-tooltip></el-table-column>
+          <el-table-column type="index" :index="computeIndex" label="序号" width="60"
+                           show-overflow-tooltip></el-table-column>
           <el-table-column prop="studentName" label="学生名" show-overflow-tooltip></el-table-column>
           <el-table-column prop="studentId" label="学号" show-overflow-tooltip></el-table-column>
           <el-table-column prop="courseName" label="课程名" show-overflow-tooltip></el-table-column>
@@ -59,6 +60,7 @@
               <span>{{scope.row.score===-1?'暂无':scope.row.score}}</span>
             </template>
           </el-table-column>
+          <el-table-column prop="classTime" label="开课时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
@@ -75,6 +77,7 @@
 </template>
 <script>
   import {downloadFile} from "@/utils/tools.js";
+  import {scoreOptions} from '@/utils/dictionary.js'
   import qrButton from "@/components/common/qrButton.vue";
 
   export default {
@@ -88,15 +91,7 @@
           teacherName: '',
           scoreCode: ''
         },
-        scoreOptions: [
-          {name: '请选择', value: ''},
-          {name: '特优(90以上)', value: 1},
-          {name: '优(80-89)', value: 2},
-          {name: '良(70-79)', value: 3},
-          {name: '及格(60-69)', value: 4},
-          {name: '不及格(60以下)', value: 5},
-          {name: '无成绩', value: 6}
-        ],
+        scoreOptions,
         ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),
         tableData: [],
         totalCount: 0,
@@ -124,7 +119,7 @@
           page: this.page,
           count: this.count
         }, {responseType: 'blob'}).then(r => {
-          downloadFile(r.data, '我的成绩')
+          downloadFile(r.data, '学生成绩')
           this.$message.success('导出成功')
           this.loaded.close()
         })
@@ -143,13 +138,15 @@
           inputValue: row.score > -1 ? row.score : '',
           confirmButtonText: '确定',
           cancelButtonText: '取消',
-          // inputPattern: /^[0-9]+$/,
+          // inputPattern: /^\d{1,3}.?\d$/,
           // inputErrorMessage: '格式不正确',
           inputValidator: function (v) {
             if (!v) return '请输入分数'
-            if (!/^[0-9]+$/.test(v)) return '格式不正确'
-            if (v < 0 || v > 150) {
-              return '分数超过限制'
+            if (v !== '-1') {
+              if (!/^\d{1,3}(\.\d)?$/.test(v)) return '格式不正确'
+              if (v < 0 || v > 100) {
+                return '分数超过限制'
+              }
             }
           }
         }).then(value => {

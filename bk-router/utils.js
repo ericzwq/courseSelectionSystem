@@ -1,3 +1,5 @@
+let {scoreLevel} = require('./db')
+
 let jwt = require('jsonwebtoken')
 
 exports.filterQuery = function (query) {
@@ -24,7 +26,7 @@ exports.accessControl = function (req, res, access, status) {
 }
 
 exports.checkParams = function (res, config, params, status) {
-  let numReg = /^\d+$/
+  let numReg = /^-?\d+$/
   status = status || 1
   for (let i = 0; i < config.length; i++) {
     let item = config[i]
@@ -34,67 +36,69 @@ exports.checkParams = function (res, config, params, status) {
     let max = item.max
     let min = item.min
     let type = item.type
-    let fixed = item.fixed  //固定长度
-    if (!v) return res.json({message: `参数${k}缺失`, status}) === 1 // res.json返回值为res，永远不会等于1，所以返回false
-    if (fixed && v.toString().length !== fixed) return res.json({message: `参数${k}长度须为${fixed}`, status}) === 1
-    if (type && type === 'string') { // 字符串
-      if (fixed) continue
-      if (max && v.toString().length > max) {
-        return res.json({message: `参数${k}的长度须小于${max}`, status}) === 1
-      } else if (min && v.toString().length < min) {
-        return res.json({message: `参数${k}的长度须大于${min}`, status}) === 1
+    let m = item.m
+    // let fixed = item.fixed  // 固定长度
+    let validator = item.validator
+    let reg = item.reg
+    if (!v && v.toString() !== '0') return res.json({message: m || `参数${k}缺失`, status}) === 1 // res.json返回值为res，永远不会等于1，所以返回false
+    if (validator) { // 校验函数优先
+      let r = validator(v)
+      if (!r.valid) {
+        return res.json({message: r.m || `参数${k}非法`, status}) === 1
       }
-    } else if (type && type === 'array') {
-      if (!Array.isArray(v)) return res.json({message: `参数${k}须为数组`, status}) === 1
-      for (let j = 0; j < v.length; j++) {
-        if (!numReg.test(v[j])) return res.json({message: `参数${k}的子项须为正整数`, status}) === 1
-      }
-    } else if (type && type === 'email') { // 邮箱
-      if (!/\w+@\w+.com$/.test(v)) return res.json({message: '邮箱格式错误', status}) === 1
-    } else if (type && type === 'enum') { // 枚举
-      if (item['enum'].indexOf(v) < 0) return res.json({message: `参数${k}的值非法`, status}) === 1
-    } else { //默认为正整数
-      if (!numReg.test(v)) return res.json({message: `参数${k}须为正整数`, status}) === 1
-      if (fixed) continue
-      if (min && v < min) {
-        return res.json({message: `参数${k}须大于${min}`, status}) === 1
-      } else if (max && v > max) {
-        return res.json({message: `参数${k}须小于${max}`, status}) === 1
+    } else if (item.reg) { // 正则
+      if (!reg.test(v)) return res.json({message: m || `参数${k}格式非法`, status}) === 1
+    } else {
+      // if (fixed && v.toString().length !== fixed) return res.json({message: `参数${k}长度须为${fixed}`, status}) === 1
+      if (type) {
+        if (type === 'string') { // 字符串
+          // if (fixed) continue
+          if (max && v.toString().length > max) {
+            return res.json({message: m || `参数${k}的长度须小于或等于${max}`, status}) === 1
+          } else if (min && v.toString().length < min) {
+            return res.json({message: m || `参数${k}的长度须大于或等于${min}`, status}) === 1
+          }
+        } else if (type === 'array') { // 数组
+          if (!Array.isArray(v)) return res.json({message: m || `参数${k}须为数组`, status}) === 1
+          // for (let j = 0; j < v.length; j++) {
+          //   if (!numReg.test(v[j])) return res.json({message: m || `参数${k}的子项须为整数`, status}) === 1
+          // }
+        } else if (type === 'email') { // 邮箱
+          if (!/\w+@\w+.com$/.test(v)) return res.json({message: m || '邮箱格式错误', status}) === 1
+          v = v.toString()
+          if (max && v.length > max) {
+            return res.json({message: m || `参数${k}的长度须小于或等于${max}`, status}) === 1
+          } else if (min && v.length < min) {
+            return res.json({message: m || `参数${k}的长度须大于或等于${min}`, status}) === 1
+          }
+        } else if (type === 'enum') { // 枚举
+          if (item['enum'].indexOf(v) < 0) return res.json({message: m || `参数${k}的值非法`, status}) === 1
+        } else if (type === 'date') { // 日期
+          if (isNaN(new Date(v).valueOf())) return res.json({message: m || `参数${k}格式错误`, status}) === 1
+        } else {
+          throw Error('校验类型错误')
+        }
+      } else { //默认为整数
+        if (!numReg.test(v)) return res.json({message: m || `参数${k}须为整数`, status}) === 1
+        // if (fixed) continue
+        if (min && v < min) {
+          return res.json({message: m || `参数${k}须大于或等于${min}`, status}) === 1
+        } else if (max && v > max) {
+          return res.json({message: m || `参数${k}须小于或等于${max}`, status}) === 1
+        }
       }
     }
   }
   return true
 }
 
-exports.getLog = function (head, body) {
-  for (let k in body) {
-    head = head + '|' + k + ': ' + body[k]
-  }
-  console.log(head)
-}
 exports.getScoreSqlByScoreCode = function (code) {
   let sql_score = 'and '
-  switch (parseInt(code)) {
-    case 1:
-      sql_score += 'score >= 90'
-      break
-    case 2:
-      sql_score += 'score between 80 and 89'
-      break
-    case 3:
-      sql_score += 'score between 70 and 79'
-      break
-    case 4:
-      sql_score += 'score between 60 and 69'
-      break
-    case 5:
-      sql_score += 'score between 0 and 59'
-      break
-    case 6:
-      sql_score += 'score < 0'
-      break
-    default:
-      sql_score = ''
+  let scoreStr = scoreLevel[code]
+  if (scoreStr) {
+    sql_score += scoreStr
+  } else {
+    sql_score = ''
   }
   return sql_score
 }
@@ -110,6 +114,8 @@ exports.getExcelData = function (data) {
   return datas
 }
 exports.setExcelType = function (res) {
-  res.setHeader('Content-Type', 'application/vnd.ms-excel') // openxmlformats
-  res.setHeader("Content-Disposition", "attachment; filename=" + "scores.xls")
+  // res.setHeader('Content-Type', 'application/vnd.ms-excel') // application/vnd.openxmlformats
+  // res.setHeader('Content-Type', 'application/vnd.openxmlformats;charset=utf-8')
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8')
+  res.setHeader("Content-Disposition", "attachment; filename=scores.xlsx")
 }

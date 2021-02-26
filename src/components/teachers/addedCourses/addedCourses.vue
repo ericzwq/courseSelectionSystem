@@ -35,13 +35,14 @@
           <el-table-column prop="classroom" label="教室" show-overflow-tooltip></el-table-column>
           <el-table-column prop="selectedCount" label="已选人数" show-overflow-tooltip></el-table-column>
           <el-table-column prop="maxCount" label="人数上限" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="classTime" label="开课时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
           <el-table-column fixed="right" label="操作">
             <template slot-scope="scope">
-              <el-button @click="updateCourse(scope.row)" size="mini" type="primary" plain class="updateScore">编辑
-              </el-button>
+              <el-button @click="updateCourse(scope.row)" type="primary" size="mini" plain class="updateScore" v-if="new Date(scope.row.classTime).getTime() > Date.now()">编辑</el-button>
+              <el-button disabled size="mini" plain v-else>无</el-button>
             </template>
           </el-table-column>
         </template>
@@ -67,7 +68,6 @@
         totalCount: 0,
         page: 1,
         count: 10,
-        id: sessionStorage.getItem('id'),
         tableObj: {},
         formCollapse: false
       }
@@ -79,7 +79,6 @@
       getTable(page, count) {
         this.page = page
         this.count = count
-        this.searchForm.id = this.id
         this.getTableData.call(this, '/teachers/addedCourses', this.searchForm)
       },
       updateCourse(row) {
@@ -106,7 +105,6 @@
                   classroom: formData.classroom,
                   maxCount: formData.maxCount,
                   courseId: row.courseId,
-                  id: this.id
                 }).then(r => {
                   let data = r.data
                   done();

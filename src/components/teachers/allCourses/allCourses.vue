@@ -38,6 +38,7 @@
           <el-table-column prop="classroom" label="教室" show-overflow-tooltip></el-table-column>
           <el-table-column prop="selectedCount" label="已选人数" show-overflow-tooltip></el-table-column>
           <el-table-column prop="maxCount" label="人数上限" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="classTime" label="开课时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>

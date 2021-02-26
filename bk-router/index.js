@@ -1,7 +1,26 @@
 let express = require('express')
-let {querySql, paramsConfig, getLimitStr, selectTotal, totalRows, studentExportScoreCol, commonExportScoreCol, commonInterfaces, access} = require('./db.js')
+let {
+  querySql,
+  paramsConfig,
+  getLimitStr,
+  selectTotal,
+  totalRows,
+  studentExportScoreCol,
+  commonExportScoreCol,
+  commonInterfaces,
+  access,
+  scoreLevel
+} = require('./db.js')
 let path = require('path')
-let {getJwt, checkParams, getLog, filterQuery, getExcelData, setExcelType, getScoreSqlByScoreCode, accessControl} = require('./utils.js')
+let {
+  getJwt,
+  checkParams,
+  filterQuery,
+  getExcelData,
+  setExcelType,
+  getScoreSqlByScoreCode,
+  accessControl
+} = require('./utils.js')
 let nodeExcel = require('excel-export')
 let fs = require('fs')
 let qrImg = require('qr-image')
@@ -192,7 +211,6 @@ router.get('/test/export', function (req, res) {
 router.post(commonInterfaces.login, function (req, res) {
   let body = req.body
   let level = body.level
-  getLog('post-->login: ', body)
   if (!checkParams(res, [paramsConfig.level, paramsConfig.username, paramsConfig.password], body, 4055)) return
   if (level !== 'students' && level !== 'teachers' && level !== 'admins') {
     return res.json({message: '未知的身份', status: 4056, notLogin: true})
@@ -226,11 +244,6 @@ function getVerificationCode(req, res, isAuth) {
   let query = req.query
   let email = query.email
   if (!checkParams(res, [paramsConfig.email, paramsConfig.isRegister], query, 4099)) return
-  if (isAuth) {
-    getLog('get-->/public/authVerificationCode: ', query)
-  } else {
-    getLog('get-->/public/verificationCode: ', query)
-  }
   if (isAuth && !checkParams(res, [paramsConfig.username], query, 5004)) return // 非注册验证用户名
   let levels = ['students', 'teachers', 'admins']
   let sql = ''
@@ -258,7 +271,7 @@ function getVerificationCode(req, res, isAuth) {
 
       transporter.sendMail(mailOptions, function (error, info) {
         if (error) return res.json({message: '发送失败', status: 5000})
-        let secret = (isAuth ? query.username.toString() : '') + code
+        let secret = (isAuth ? query.username.toString() : email.toString()) + code
         let token = getJwt({username: query.username}, secret, 600)
         res.json({message: '验证码发送成功', status: 0, token})
       });
@@ -279,19 +292,28 @@ router.post(commonInterfaces.register, function (req, res) {
   let body = req.body
   let invitation = body.invitation.toString()
   let level = body.level
-  getLog('post-->register: ', body)
+  let username = body.username
+  let email = body.email
   if (!checkParams(res, [paramsConfig.invitation, paramsConfig.level, paramsConfig.name, paramsConfig.username,
-    paramsConfig.password, paramsConfig.phone, paramsConfig.sex, paramsConfig.email], body, 4059)) return
+    paramsConfig.password, paramsConfig.sex, paramsConfig.email, {
+      k: 'phone', reg: /^1\d{10}$/
+    }], body, 4059)) return
   /*验证邀请码*/
   if ((level === 'students' && invitation !== '111') || (level === 'teachers' && invitation !== '222') ||
     (level === 'admins') && invitation !== '333') return res.json({message: '邀请码错误', status: 5009})
   querySql(function (connection) {
-    connection.query(`SELECT count(1) as count FROM ${body.level} WHERE username = '${body.username}'`, function (error, results) {
+    connection.query(`SELECT username,email FROM ${body.level} WHERE username = '${username}' OR email = '${email}'`, function (error, results) {
       if (error) throw error
-      if (results.flat(Infinity).length === 0) return res.json({message: '暂无数据', status: 5010})
-      if (results[0].count > 0) return res.json({message: '用户名已存在', status: 5011})
+      // if (results.flat(Infinity).length === 0) return res.json({message: '暂无数据', status: 5010})
+      for (let i = 0, l = results.length; i < l; i++) {
+        if (results[i].username === username) {
+          return res.json({message: '用户名已存在', status: 5011})
+        } else if (results[i].email === email) {
+          return res.json({message: '邮箱已存在', status: 5018})
+        }
+      }
       connection.query(`INSERT ${level}(name, sex, phone, email, username, password) VALUES(?,?,?,?,?,?);`,
-        [body.name, body.sex, body.phone, body.email, body.username, body.password], function (error2, results2) {
+        [body.name, body.sex, body.phone, email, username, body.password], function (error2, results2) {
           if (error2) throw error2
           if (results2.affectedRows > 0) {
             res.json({
@@ -316,7 +338,6 @@ router.post(commonInterfaces.register, function (req, res) {
 router.post(commonInterfaces.findPsw, function (req, res) {
   let body = req.body
   let level = body.level
-  getLog('post-->findPsw: ', body)
   if (!checkParams(res, [paramsConfig.level, paramsConfig.username, paramsConfig.password, paramsConfig.email], body, 4060)) return
   querySql(function (connection) {
     connection.query(`SELECT count(1) as count,phone,email,id,name,sex,status FROM ${level} WHERE username = ?`, [body.username],
@@ -351,23 +372,46 @@ router.post(commonInterfaces.updatePsw, function (req, res) {
   let body = req.body
   let level = req.headers['x-level']
   body.level = level
-  getLog('post-->updatePsw: ', body)
-  if (!checkParams(res, [paramsConfig.level, paramsConfig.id, paramsConfig.newPsw, paramsConfig.oldPsw], body, 4064)) return
+  if (!checkParams(res, [paramsConfig.level, paramsConfig.newPsw, paramsConfig.oldPsw], body, 4064)) return
   querySql(function (connection) {
-    connection.query(`SELECT password FROM ${level} WHERE id = ${body.id}`, function (error, results) {
+    let headers = req.headers
+    connection.query(`SELECT password FROM ${level} WHERE id = ${headers.id}`, function (error, results) {
       if (error) return res.json({message: '修改失败', status: 4065})
       if (results.length === 0) return res.json({message: '身份错误', status: 4000})
       if (results[0].password !== body.oldPsw) return res.json({message: '旧密码错误', status: 4001})
-      connection.query(`UPDATE ${level} SET password = ? WHERE id = ?`, [body.newPsw, parseInt(body.id)], function (error2, results2) {
+      connection.query(`UPDATE ${level} SET password = ? WHERE id = ?`, [body.newPsw, parseInt(headers.id)], function (error2, results2) {
         if (error2) throw error2
         if (results2.affectedRows > 0) {
           res.json({
             message: '修改成功',
-            token: getJwt(body, body.level + body.id + encodeURIComponent(req.headers['name']), 3600 * 12),
+            token: getJwt(body, body.level + body.id + encodeURIComponent(headers['name']), 3600 * 12),
             status: 0
           })
         }
       })
+    })
+  })
+})
+/*老师，管理员查看成绩分布*/
+router.get(commonInterfaces.getAllGradeDistributions, function (req, res) {
+  if (!accessControl(req, res, access.OVER_TEACHERS)) return
+  let query = req.query
+  querySql(function (connection) {
+    let sql = ''
+    let {teacherName, studentId, studentName, courseName, teacherId, courseId} = query
+    let innerStu = 'INNER JOIN students st ON st.id = sc.studentId'
+    let innerCou = 'INNER JOIN courses co IGNORE INDEX(\`primary\`) ON co.id = sc.courseId'
+    let innerTea = 'INNER JOIN teachers te ON te.id = co.teacherId'
+    for (let i = 0, len = scoreLevel.length; i < len; i++) {
+      sql += `SELECT count(1) level${i} FROM scores sc ${(studentId || studentName) ? innerStu : ''} ${(teacherName || courseName || teacherId) ? innerCou : ''} ${(teacherName ? innerTea : '')}
+      WHERE ${scoreLevel[i]} ${studentId ? 'AND st.id = ' + studentId : ''} ${studentName ? 'AND st.name = \'' + studentName + '\'' : ''}
+      ${courseName ? 'AND co.name = \'' + courseName + '\'' : ''} ${teacherName ? 'AND te.name = \'' + teacherName + '\'' : ''} ${teacherId ? 'AND co.teacherId = ' + teacherId : ''}
+      ${courseId ? 'AND sc.courseId = ' + courseId : ''};`
+    }
+    // console.log(sql)
+    connection.query(sql, function (error, results) {
+      if (error) return res.json({message: '查询数据失败', status: 5023})
+      res.json({data: results.flat(1), status: 0})
     })
   })
 })
@@ -377,26 +421,25 @@ router.post(commonInterfaces.exportStudentScore, function (req, res) {
   let body = filterQuery(req.body)
   let scoreIds = body.scoreIds
   let limit = req.headers['x-level'] === 'admins' ? 100000 : 10000
-  getLog('post-->exportStudentScores: ', body)
   let sql_score_id = ''
   if (!Array.isArray(scoreIds)) return res.json({message: '参数scoreIds须为数组', status: 4067})
   let scoreConf
   if (!(body.all && body.all === 1)) {
-    sql_score_id = `AND scores.id in (${scoreIds.join(',') || 0})`
+    sql_score_id = `sc.id in (${scoreIds.join(',') || 0}) AND`
     scoreConf = paramsConfig.scoreIds
   }
-  let sql_student = (!body.studentCategory || parseInt(body.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + body.id
+  let sql_student = (!body.studentCategory || parseInt(body.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + req.headers.id
   let sql_score = getScoreSqlByScoreCode(body.scoreCode)
   let search = `st.name like '${body.studentName || ''}%' AND co.name like '${body.courseName || ''}%'
     AND te.name like '${body.teacherName || ''}%' ${sql_score}`
   if (!checkParams(res, [scoreConf], body, 4069)) return
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} st.name studentName,sc.studentId,co.name courseName,co.id courseId,te.name teacherName,
-    te.id teacherId,sc.score,sc.updatedBy,sc.createdAt,sc.updatedAt
+    te.id teacherId,sc.score,co.classTime,sc.updatedBy,sc.createdAt,sc.updatedAt
     FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id)
       INNER JOIN courses co IGNORE INDEX(\`primary\`) ON sc.courseId=co.id ${sql_student})
-      INNER JOIN teachers te ON te.id = co.teacherId 
-      WHERE ${body.studentId ? 'st.id = ' + body.studentId : "st.id >= ''"} AND ${search}
+      INNER JOIN teachers te ON te.id = co.teacherId
+      WHERE ${sql_score_id} ${body.studentId ? 'st.id = ' + body.studentId : "st.id >= ''"} AND ${search}
       LIMIT ${limit};`, function (error, results) {
       if (error) throw error
       let conf = {}
@@ -413,9 +456,8 @@ router.get(commonInterfaces.getScoreDetails, function (req, res) {
   if (!accessControl(req, res, access.OVER_STUDENTS)) return
   let query = filterQuery(req.query)
   let level = req.headers['x-level']
-  getLog('get-->scoreDetails: ', query)
-  if (!checkParams(res, [paramsConfig.id], query, 4081)) return
-  let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + query.id
+  let id = req.headers.id
+  let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + id
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let studentSearch = `${query.courseId ? 'sc.courseId = ' + query.courseId + ' AND' : ''} ma.fileName like '${query.fileName || ''}%'
     AND co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' ${sql_score}`
@@ -426,7 +468,7 @@ router.get(commonInterfaces.getScoreDetails, function (req, res) {
        ma.fileName,ma.size,ma.url,sc.score,te.name teacherName,co.teacherId,ma.id materialId,
        ma.updatedBy,ma.createdAt,ma.updatedAt
         FROM (((materials ma INNER JOIN scores sc ON ma.scoreId = sc.id)
-        INNER JOIN students st ON sc.studentId = st.id ${level === 'students' ? `AND sc.studentId=${query.id}` : ''})
+        INNER JOIN students st ON sc.studentId = st.id ${level === 'students' ? `AND sc.studentId=${id}` : ''})
         INNER JOIN courses co ON sc.courseId = co.id ${level === 'teachers' ? sql_student : ''})
         INNER JOIN teachers te ON te.id = co.teacherId WHERE ${search}
         ORDER BY ma.updatedAt DESC ${getLimitStr(query)};${selectTotal}`,
@@ -441,33 +483,34 @@ router.get(commonInterfaces.getScoreDetails, function (req, res) {
 router.post(commonInterfaces.deleteScoreDetail, function (req, res) {
   if (!accessControl(req, res, access.OVER_TEACHERS)) return
   let body = req.body
-  let level = req.headers['x-level']
+  let headers = req.headers
+  let level = headers['x-level']
   let url = ''
-  getLog('post-->deleteScoreDetail: |level:' + level, body)
-  if (!checkParams(res, [paramsConfig.materialId, paramsConfig.id], body, 4086)) return
+  if (!checkParams(res, [paramsConfig.materialId], body, 4086)) return
   if (level !== 'teachers' && level !== 'admins') return res.json({message: '您无权删除！', status: 4089})
-  if (level === 'teachers') {
-    querySql(function (connection) {
-      connection.query(`SELECT materials.id materialId,url FROM courses,materials,scores WHERE courses.teacherId = ${body.id} AND
-        scores.courseId = courses.id AND materials.scoreId = scores.id`,
-        function (error, results) {
-          if (results.length < 1) return res.json({message: '此材料非您的学生，您无权删除！', status: 4087})
-          url = results[0].url
-        })
-    })
-  }
   querySql(function (connection) {
-    connection.query(`DELETE
-                      FROM materials
-                      WHERE id = ?`, [body.materialId],
-      function (error, results) {
-        if (results.affectedRows > 0) {
-          fs.unlink(url, () => console.log('删除成绩详情文件'))
-          res.json({message: '删除成功', status: 0})
-        } else {
-          res.json({message: '删除失败', status: 4088})
-        }
+    connection.query(`SELECT ma.url,co.teacherId FROM materials ma INNER JOIN scores sc on sc.id = ma.scoreId INNER JOIN courses co
+        ON sc.courseId = co.id WHERE ma.id = ${body.materialId}`, function (error, results) {
+      if (results.length < 1) return res.json({message: '文件不存在！', status: 5020})
+      if (level === 'teachers' && results[0]['teacherId'] !== +headers.id) return res.json({
+        message: '此材料非您的学生所属，您无权删除！',
+        status: 4087
       })
+      url = results[0].url
+      querySql(function (connection) {
+        connection.query(`DELETE
+                          FROM materials
+                          WHERE id = ?`, [body.materialId],
+          function (error, results) {
+            if (results.affectedRows > 0) {
+              fs.unlink(url, () => console.log('删除成绩详情文件'))
+              res.json({message: '删除成功', status: 0})
+            } else {
+              res.json({message: '删除失败', status: 4088})
+            }
+          })
+      })
+    })
   })
 })
 /*学生，老师，管理员获取二维码导出图片*/
@@ -479,36 +522,36 @@ router.get(commonInterfaces.getQrPic, function (req, res) {
   let params = ''
   for (let k in query) {
     if ((query[k] || query[k] === 0) && k !== 'token' && k !== 'level' && k !== 'id' && k !== 'name') {
-      params += `&${k}=${query[k]}`
+      params += `&${k}=${encodeURIComponent(query[k])}`
     }
   }
-  getLog('   :', query)
   let token = getJwt({}, headers['x-level'] + headers.id + headers.name, 600)
   let url = `http://${ip}:3000/api/qr/exportScore?authorization=${token}&level=${headers['x-level']}&id=${headers.id}&name=${headers.name}${params}`
   let img = qrImg.image(url, {size: 10, ec_level: 'H'}) // 容错30%
   res.writeHead(200, {'Content-Type': 'image/png'})
   res.token = token
   img.pipe(res)
+  console.log(url)
 })
 /*学生，老师，管理员二维码导出成绩*/
 router.get(commonInterfaces.qrExportScore, function (req, res) {
   // if (!accessControl(req, res, access.OVER_STUDENTS)) return
   let query = filterQuery(req.query)
-  getLog('get-->qr/exportScore:二维码导出成绩 ', query)
   let level = query.level
-  let limit = req.headers['x-level'] === 'admins' ? 100000 : 10000
+  let limit = level === 'admins' ? 100000 : 10000
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let search = `st.name like '${query.studentName || ''}%' AND co.name like '${query.courseName || ''}%'
     AND te.name like '${query.teacherName || ''}%' ${sql_score}`
   let sql_select = `${level === 'students' ? '' : 'st.name studentName,studentId,'}co.name courseName,co.id courseId,te.name teacherName,
-    te.id AS teacherId,sc.score,sc.updatedBy,sc.createdAt,sc.updatedAt`
+    te.id AS teacherId,sc.score,co.classTime,sc.updatedBy,sc.createdAt,sc.updatedAt`
   let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + query.id
   querySql(function (connection) {
+    console.log('二维码导出中~')
     connection.query(`SELECT ${totalRows} ${sql_select}
     FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id ${level === 'students' ? `AND sc.studentId=${query.id}` : ''})
       INNER JOIN courses co IGNORE INDEX(\`primary\`) ON sc.courseId=co.id ${level === 'teachers' ? sql_student : ''})
-      INNER JOIN teachers te ON te.id = co.teacherId 
-      WHERE ${query.studentId ? 'st.id = ' + query.studentId : "st.id >= ''"} AND ${search} 
+      INNER JOIN teachers te ON te.id = co.teacherId
+      WHERE ${query.studentId ? 'st.id = ' + query.studentId : "st.id >= ''"} AND ${search}
       LIMIT ${limit};`, function (error, results) {
       if (error) return res.json({message: '查询数据失败', status: 4093})
       let conf = {}
@@ -517,6 +560,7 @@ router.get(commonInterfaces.qrExportScore, function (req, res) {
       let r = nodeExcel.execute(conf)
       setExcelType(res)
       res.end(r, 'binary')
+      console.log('二维码导出完成')
     })
   })
 })

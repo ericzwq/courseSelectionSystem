@@ -23,6 +23,13 @@ app.all("*", function (req, res, next) {
 // app.engine('html', require('express-art-template'))
 app.use((req, res, next) => {
   let pathname = req._parsedUrl.pathname
+  let method = req.method
+  let params = method === 'GET' ? req.query : req.body
+  let head = method + '-->' + pathname
+  for (let k in params) {
+    head = head + '|' + k + ': ' + params[k]
+  }
+  console.log(head) // 日志
   if (pathname.startsWith('/api/qr/')) { // 扫描二维码
     let query = filterQuery(req.query)
     jwt.verify(query.authorization, query.level + query.id + encodeURIComponent(query.name), function (err, decoded) {
@@ -33,8 +40,7 @@ app.use((req, res, next) => {
     return next()
   } else if (pathname.startsWith('/api/code/')) { // 验证邮箱验证码
     let body = req.body
-    let key = body.username + body.verificationCode
-    jwt.verify(body.token, body.verificationCode, function (err, decoded) {
+    jwt.verify(body.token, body.email.toString() + body.verificationCode, function (err, decoded) {
       if (err) {
         return res.json({message: '验证码错误', status: 5001})
       }
@@ -54,11 +60,12 @@ app.use((req, res, next) => {
     let id = req.headers['id']
     let name = req.headers['name']
     if (!level || !id || !name) return res.json({message: '获取用户信息失败', status: 4067, notLogin: true})
+    console.log('      用户信息-->name: ', decodeURIComponent(name), ' id: ', id, ' level: ', level)
     // let refreshToken = req.headers['x-refresh-token']
     jwt.verify(req.headers.authorization, level + id + name, function (err, decoded) {
       if (err) {
         console.log('server:', level, ' token fail')
-        return res.json({message: '登录验证失败', status: 4017, notLogin: true})
+        return res.json({message: '登录有效性验证失败', status: 4017, notLogin: true})
       }
       querySql(function (connection) {
         connection.query(`SELECT status FROM ${level} WHERE id = ${id}`, function (error, results) {
@@ -72,5 +79,5 @@ app.use((req, res, next) => {
 })
 app.use(router)
 app.listen(3000, function () {
-  console.log('start')
+  console.log('server is start')
 })

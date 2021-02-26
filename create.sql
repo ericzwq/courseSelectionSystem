@@ -13,11 +13,13 @@ create table courses
     classroom     varchar(20)                        not null,
     selectedCount int(5)                             not null,
     maxCount      int(5)                             not null,
+    classTime     date                               not null,
     createdBy     varchar(20)                        not null,
-    updatedBy     varchar(20)                                 default '--',
+    updatedBy     varchar(20)                        not null default '--',
     createdAt     timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt     timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );
+create index idx_name on courses (name);
 
 /*教师表*/
 drop table if exists teachers;
@@ -30,10 +32,13 @@ create table teachers
     phone     varchar(20)                        not null,
     email     varchar(30)                        not null,
     password  varchar(20)                        not null,
-    status    int(1)                                      default 1,
+    status    int(1)                             not null default 1,
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );
+create index idx_name on teachers (name);
+create index idx_username on teachers (username);
+create index idx_email on teachers (email);
 
 /*学生表*/
 drop table if exists students;
@@ -46,10 +51,13 @@ create table students
     email     varchar(30)                        not null,
     username  varchar(20)                        not null,
     password  varchar(20)                        not null,
-    status    int(1)                                      default 1,
+    status    int(1)                             not null default 1,
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );
+create index idx_name on students (name);
+create index idx_username on students (username);
+create index idx_email on students (email);
 
 /*成绩表*/
 drop table if exists scores;
@@ -58,12 +66,13 @@ create table scores
     id        int(11) auto_increment primary key not null,
     studentId int(11)                            not null,
     courseId  int(11)                            not null,
-    score     int(3)                             not null,
+    score     decimal(4, 1)                      not null,
     createdBy varchar(20)                        not null,
-    updatedBy varchar(20)                                 default '--',
+    updatedBy varchar(20)                        not null default '--',
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );
+create index idx_score on scores(score);
 
 /*管理员*/
 drop table if exists admins;
@@ -76,10 +85,12 @@ create table admins
     phone     varchar(20)                        not null,
     email     varchar(30)                        not null,
     password  varchar(20)                        not null,
-    status    int(1)                                      default 1,
+    status    int(1)                             not null default 1,
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );
+create index idx_username on admins (username);
+create index idx_email on admins (email);
 
 /*材料表*/
 drop table if exists materials;
@@ -91,7 +102,7 @@ create table materials
     size      varchar(20)                        not null,
     scoreId   int(11)                            not null,
     createdBy varchar(20)                        not null,
-    updatedBy varchar(20)                                 default '--',
+    updatedBy varchar(20)                        not null default '--',
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );

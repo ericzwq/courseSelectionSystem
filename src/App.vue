@@ -23,6 +23,6 @@
   }
 
   #nprogress .bar {
-    background: red !important; /*nprogress自定义颜色*/
+    background: #409EFF !important; /*nprogress自定义颜色*/
   }
 </style>

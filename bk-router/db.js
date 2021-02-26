@@ -27,11 +27,11 @@ exports.paramsConfig = {
   teacherId: {k: 'teacherId'},
   studentId: {k: 'studentId'},
   maxCount: {k: 'maxCount', min: 1, max: 999},
-  score: {k: 'score', min: 0, max: 100},
+  // score: {k: 'score', min: 0, max: 100},
   teacherName: {k: 'teacherName', max: 10, type: 'string'},
-  phone: {k: 'phone', fixed: 11},
+  // phone: {k: 'phone', fixed: 11},
   studentName: {k: 'studentName', max: 10, type: 'string'},
-  id: {k: 'id'},
+  // id: {k: 'id'},
   level: {k: 'level', type: 'string'},
   username: {k: 'username', type: 'string', max: 18},
   password: {k: 'password', type: 'string', max: 18, min: 6},
@@ -43,8 +43,9 @@ exports.paramsConfig = {
   scoreId: {k: 'scoreId'},
   sex: {k: 'sex', type: 'string', max: 1},
   materialId: {k: 'materialId'},
-  email: {k: 'email', type: 'email'},
-  isRegister: {k: 'isRegister', type: 'enum', enum: ['0', '1']}
+  email: {k: 'email', type: 'email', max: 18},
+  isRegister: {k: 'isRegister', type: 'enum', enum: ['0', '1']},
+  classTime: {k: 'classTime', type: 'date'}
 }
 exports.upScoreDetailsDir = './bk-assets/upload/scoreDetails'
 
@@ -83,6 +84,11 @@ exports.commonExportScoreCol = [
   {
     caption: '分数',
     type: 'number',
+    width
+  },
+  {
+    caption: '开课时间',
+    type: 'string',
     width
   },
   {
@@ -126,6 +132,11 @@ exports.studentExportScoreCol = [
   {
     caption: '分数',
     type: 'number',
+    width
+  },
+  {
+    caption: '开课时间',
+    type: 'string',
     width
   },
   {
@@ -174,9 +185,11 @@ let commonInterfaces = {
   deleteScoreDetail: '/api/deleteScoreDetail', // 老师，管理员删除成绩详情
   getQrPic: '/api/qrExportScore',// 学生，老师，管理员获取二维码导出图片
   qrExportScore: '/api/qr/exportScore', // 学生，老师，管理员二维码导出成绩
+  getAllGradeDistributions: '/api/getAllGradeDistributions' // 老师，管理员获取全部成绩分布
 }
 exports.commonInterfaces = commonInterfaces
 exports.studentsInterfaces = {
+  getGradeDistributions: studentsPrefix + 'getGradeDistributions', // 获取成绩分布数据
   selectScores: studentsPrefix + 'myScores', // 查看成绩
   exportScores: studentsPrefix + 'exportScore', // 导出成绩
   unselectCourse: studentsPrefix + 'deleteCourse', // 退选课程
@@ -215,3 +228,12 @@ exports.access = {
   OVER_STUDENTS: ['students', 'teachers', 'admins'],
   OVER_TEACHERS: ['teachers', 'admins']
 }
+
+exports.scoreLevel = [
+  'score >= 90',
+  'score >= 80 and score < 90',
+  'score >= 70 and score < 80',
+  'score >= 60 and score < 70',
+  'score >= 0 and score < 60',
+  'score < 0',
+]

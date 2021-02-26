@@ -28,6 +28,9 @@ import {
   Dialog,
   Upload,
   Tooltip,
+  DatePicker,
+  Breadcrumb,
+  BreadcrumbItem
 } from "element-ui"
 import 'element-ui/lib/theme-chalk/index.css'
 
@@ -51,6 +54,9 @@ Vue.use(Option)
 Vue.use(Dialog)
 Vue.use(Upload)
 Vue.use(Tooltip)
+Vue.use(DatePicker)
+Vue.use(Breadcrumb)
+Vue.use(BreadcrumbItem)
 Vue.prototype.$prompt = MessageBox.prompt
 Vue.prototype.$message = Message
 Vue.prototype.$msgbox = MessageBox;
@@ -65,7 +71,7 @@ Vue.prototype.loading = function () {
   this.__proto__.loaded = Loading.service({/*Vue.prototype.loaded*/
     lock: true,
     text: '加载中...',
-    background: 'rgba(0, 0, 0, 0.5)'
+    background: 'rgba(0, 0, 0, 0.3)'
   })
 }
 // Vue.prototype.$err = function (err, callback) {
@@ -75,16 +81,16 @@ Vue.prototype.loading = function () {
 //   callback && callback()
 // }
 Vue.prototype.getTableData = function (url, params, callback) {
-  this.loading()
+  // this.loading()
   this.tableData.length = 0
   if (!params) params = {}
   this.axios.get(url, {params: {...params, page: this.page, count: this.count}}).then(r => {
     if (!r || !r.data || !r.data.data) {
-      return this.loaded && this.loaded.close()
+      // return this.loaded && this.loaded.close()
       // return this.$message.error('系统繁忙，请刷新页面')
     }
     if (r.data.notLogin) {
-      this.loaded.close()
+      // this.loaded.close()
       return false
     }
     let data = r.data.data
@@ -93,9 +99,9 @@ Vue.prototype.getTableData = function (url, params, callback) {
     this.tableData = data[0]
     this.totalCount = data[1].totalCount
     if (data[2] && data[2].selectedCourseIds) this.selectedCourseIds = data[2].selectedCourseIds
-    this.loaded.close()
+    // this.loaded.close()
     return data
-  }, () => this.loaded && this.loaded.close())
+  }, /*() => this.loaded && this.loaded.close()*/)
 }
 
 Vue.config.productionTip = false
