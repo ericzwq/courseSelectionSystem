@@ -51,7 +51,7 @@
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
           <el-table-column
-              label="操作">
+              label="操作" fixed="right">
             <template slot-scope="{row}">
               <el-button size="mini" disabled plain v-if="selectedCourseIds.some(i=>i === row.courseId )">已选
               </el-button>

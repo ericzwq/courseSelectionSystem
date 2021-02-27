@@ -134,7 +134,7 @@ a {
   .t-slider {
     width: 200px;
     height: 100%;
-    background: #363636;
+    background: #000;
     padding-top: 20px;
     float: left;
 
@@ -143,7 +143,7 @@ a {
       height: 50px;
       line-height: 50px;
       display: block;
-      color: grey;
+      color: #fff;
     }
 
     .t-slider-item.now {
@@ -157,10 +157,9 @@ a {
   }
 
   .t-right {
-    /*width: 85%;*/
     height: 100%;
     padding: 10px;
-    overflow: hidden;
+    overflow: auto;
 
     header {
       height: 50px;
@@ -175,9 +174,6 @@ a {
       .addCourse {
         float: right;
       }
-    }
-
-    .t-main {
     }
   }
 }

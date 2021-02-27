@@ -45,7 +45,7 @@ exports.paramsConfig = {
   materialId: {k: 'materialId'},
   email: {k: 'email', type: 'email', max: 18},
   isRegister: {k: 'isRegister', type: 'enum', enum: ['0', '1']},
-  classTime: {k: 'classTime', type: 'date'}
+  classTime: {k: 'classTime', type: 'date',}
 }
 exports.upScoreDetailsDir = './bk-assets/upload/scoreDetails'
 

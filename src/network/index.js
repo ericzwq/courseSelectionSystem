@@ -8,7 +8,7 @@ let loading
 let instance = axios.create({
   baseURL: 'http://localhost:3000/api',
   // baseURL: 'http://192.168.7.201:3000/api',
-  // baseURL: 'http://192.168.1.114:3000/api',
+  // baseURL: 'http://192.168.43.104:3000/api',
   // headers: {Authorization: sessionStorage.getItem('token')}//只计算一次
 })
 instance.interceptors.request.use(config => {

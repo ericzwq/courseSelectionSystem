@@ -21,8 +21,7 @@ exports.accessControl = function (req, res, access, status) {
   if (access.length < 1) return
   let level = req.headers['x-level']
   if (access.indexOf(level) > -1) return true
-  res.json({message: '无权访问', status: status || 1})
-  return false
+  return res.json({message: '无权访问', status: status || 1}) === 1
 }
 
 exports.checkParams = function (res, config, params, status) {
@@ -44,7 +43,7 @@ exports.checkParams = function (res, config, params, status) {
     if (validator) { // 校验函数优先
       let r = validator(v)
       if (!r.valid) {
-        return res.json({message: r.m || `参数${k}非法`, status}) === 1
+        return res.json({message: '参数' + k + r.m || `参数${k}非法`, status}) === 1
       }
     } else if (item.reg) { // 正则
       if (!reg.test(v)) return res.json({message: m || `参数${k}格式非法`, status}) === 1

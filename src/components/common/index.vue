@@ -35,7 +35,8 @@
         </el-button>
       </el-form-item>
     </el-form>
-    <div id="echarts" style="width: 600px;height: 400px"></div>
+    <div id="echarts" class="chart"></div>
+    <div id="echarts2" class="chart"></div>
   </my-layout>
 </template>
 
@@ -55,25 +56,29 @@ export default {
         teacherName: '',
         teacherId: ''
       },
-      chartObj: null,
+      pieChart: null,
+      barChart: null,
       chartData: {},
       isStu: true,
-      url: '/students/getGradeDistributions'
+      title: '我的成绩分布',
+      url: '/students/getGradeDistributions',
+      chartsNames: ['≥90分', '≤80<90分', '≤70<80分', '≤60<70分', '≤0<60分', '暂无成绩']
     }
   },
   created() {
     if (sessionStorage.getItem('level') !== 'students') {
       this.isStu = false
+      this.title = '学生成绩分布'
       this.url = '/getAllGradeDistributions'
     }
   },
   mounted() {
-    let myChart = echarts.init(document.getElementById('echarts'))
-    this.chartObj = myChart
+    let myChart = echarts.init(document.getElementById('echarts'), 'dark')
+    this.pieChart = myChart
     // 绘制图表
     myChart.setOption({
       title: {
-        text: '我的成绩分布',
+        text: this.title,
         left: 'center'
       },
       tooltip: {
@@ -88,7 +93,7 @@ export default {
           name: '访问来源',
           type: 'pie',
           radius: '50%',
-          // data: this.formatChartData(this.chartData),
+          data: [],
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
@@ -96,6 +101,49 @@ export default {
               shadowColor: 'rgba(0, 0, 0, 0.5)'
             }
           }
+        }
+      ]
+    })
+    let myChart2 = echarts.init(document.getElementById('echarts2'), 'dark');
+    this.barChart = myChart2
+    myChart2.setOption({
+      color: 'blue',
+      title: {
+        text: this.title,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+          type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+        }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: [
+        {
+          type: 'category',
+          data: this.chartsNames,
+          axisTick: {
+            alignWithLabel: true
+          }
+        }
+      ],
+      yAxis: [
+        {
+          type: 'value'
+        }
+      ],
+      series: [
+        {
+          name: '直接访问',
+          type: 'bar',
+          barWidth: '60%',
+          data: []
         }
       ]
     })
@@ -111,20 +159,26 @@ export default {
       })
     },
     refreshChart() {
-      this.chartObj.setOption({series: [{data: this.formatChartData(this.chartData),}]})
+      this.pieChart.setOption({series: [{data: this.formatChartData('pie')}]})
+      this.barChart.setOption({series: [{data: this.formatChartData('bar')}]})
     },
     // 重置
     resetForm(formName) {
       this.$refs[formName].resetFields()
     },
-    formatChartData(chartData) {
+    formatChartData(type) {
       let data = []
-      let chartDataNames = ['≥90分', '≤80<90分', '≤70<80分', '≤60<70分', '≤0<60分', '暂无成绩']
+      let chartData = this.chartData
+      let chartDataNames = this.chartsNames
       let sum = 0
       for (let i = 0, len = chartData.length; i < len; i++) {
         let value = chartData[i]['level' + i]
         sum += value
-        data = data.concat({value, name: chartDataNames[i]})
+        if (type === 'bar') {
+          data = data.concat(value)
+        } else if (type === 'pie') {
+          data = data.concat({value, name: chartDataNames[i]})
+        }
       }
       if (sum === 0) {
         data = []
@@ -136,6 +190,29 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
+.chart {
+  height: 400px;
+  width: calc(50% - 5px);
+  min-width: 500px;
+  float: left;
+}
 
+.chart:last-of-type {
+  margin-left: 10px;
+}
+
+@media screen and (max-width: 1230px) {
+  /*空间不够*/
+  /*多出来的20内边距+10左边距*/
+  .chart {
+    width: 90%;
+    margin: 0 auto;
+    float: none;
+  }
+
+  .chart:last-of-type {
+    margin: 10px auto;
+  }
+}
 </style>

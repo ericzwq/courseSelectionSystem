@@ -10,9 +10,9 @@ const routes = [
   {path: '/login', component: () => import('@/components/common/login.vue'), meta: {title: '登录'}},
   {path: '/findPsw', component: () => import('@/components/common/findPsw.vue'), meta: {title: '找回密码'}},
   {path: '/register', component: () => import('@/components/common/register.vue'), meta: {title: '注册'}},
-  {path: '/teachers', redirect: '/courseselection/teachers/allCourses'},
-  {path: '/students', redirect: '/courseselection/students/myScores'},
-  {path: '/admins', redirect: '/courseselection/admins/teachersCourses'},
+  {path: '/teachers', redirect: '/courseselection/index'},
+  {path: '/students', redirect: '/courseselection/index'},
+  {path: '/admins', redirect: '/courseselection/index'},
   {
     path: '/courseselection', component: () => import('@/courseselection.vue'), children: [
       {path: 'index', component: () => import('@/components/common/index.vue')},

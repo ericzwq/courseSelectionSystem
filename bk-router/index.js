@@ -226,7 +226,7 @@ router.post(commonInterfaces.login, function (req, res) {
         if (body.password !== password) return res.json({message: '密码错误', status: 4058})
         res.json({
           message: '登录成功',
-          token: getJwt(body, level + sqlData.id + encodeURIComponent(sqlData.name), 3600 * 12),
+          token: getJwt(body, level + sqlData.id + encodeURIComponent(sqlData.name), 3600 * 120),
           // refreshToken: getJwt(body, level, 3600 * 24 * 7),
           routers: level === 'admins' ? adminRouters : level === 'teachers' ? teacherRouters : studentRouters,
           status: 0,
@@ -318,7 +318,7 @@ router.post(commonInterfaces.register, function (req, res) {
           if (results2.affectedRows > 0) {
             res.json({
               message: '注册成功',
-              token: getJwt(body, level + results2.insertId + encodeURIComponent(body.name), 3600 * 12),
+              token: getJwt(body, level + results2.insertId + encodeURIComponent(body.name), 3600 * 120),
               status: 0,
               name: body.name,
               phone: body.phone,
@@ -352,7 +352,7 @@ router.post(commonInterfaces.findPsw, function (req, res) {
           if (results2.affectedRows > 0) {
             res.json({
               message: '修改成功',
-              token: getJwt(body, level + sqlData.id + encodeURIComponent(sqlData.name), 3600 * 12),
+              token: getJwt(body, level + sqlData.id + encodeURIComponent(sqlData.name), 3600 * 120),
               status: 0,
               routers: level === 'admins' ? adminRouters : level === 'teachers' ? teacherRouters : studentRouters,
               id: sqlData.id,

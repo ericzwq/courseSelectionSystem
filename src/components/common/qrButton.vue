@@ -55,7 +55,7 @@
     .qr_img {
       position: absolute;
       top: 40px;
-      left: 0;
+      left: -40px;
       width: 200px;
       height: 200px;
       display: none;

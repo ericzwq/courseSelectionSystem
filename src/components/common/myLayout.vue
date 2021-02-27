@@ -44,6 +44,7 @@
             let formHeight = slots['form'] ? slots['form'][0].child.$el.clientHeight : 0
             let tableBtnHeight = slots['tableBtn'] ? slots['tableBtn'][0].child.$el.clientHeight : 0
             this.tableHeight = winHeight - headerHeight - formHeight - tableBtnHeight - 80 + 'px'
+            console.log(this.tableHeight)
           }
         }
       },

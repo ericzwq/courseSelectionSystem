@@ -1,5 +1,21 @@
-let {querySql, getLimitStr, totalRows, selectTotal, paramsConfig, upScoreDetailsDir, teachersInterfaces, access} = require('./db.js')
-let {filterQuery, checkParams, getScoreSqlByScoreCode, getExcelData, setExcelType, accessControl} = require('./utils.js')
+let {
+  querySql,
+  getLimitStr,
+  totalRows,
+  selectTotal,
+  paramsConfig,
+  upScoreDetailsDir,
+  teachersInterfaces,
+  access
+} = require('./db.js')
+let {
+  filterQuery,
+  checkParams,
+  getScoreSqlByScoreCode,
+  getExcelData,
+  setExcelType,
+  accessControl
+} = require('./utils.js')
 let express = require('express')
 let nodeExcel = require('excel-export')
 let xlsx = require('node-xlsx')
@@ -29,7 +45,14 @@ teacherRouter.post(teachersInterfaces.addCourse, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let body = req.body
   let headers = req.headers
-  if (!checkParams(res, [paramsConfig.courseName, paramsConfig.classroom, paramsConfig.classTime,
+  if (!checkParams(res, [paramsConfig.courseName, paramsConfig.classroom, {
+    k: 'classTime', validator: v => {
+      let now = new Date(v).valueOf()
+      if (isNaN(now)) return {valid: false, m: '格式错误'}
+      if (now < Date.now()) return {valid: false, m: '范围非法'}
+      return {valid: true}
+    }
+  },
     paramsConfig.maxCount], body, 4052)) return
   querySql(function (connection) {
     connection.query(`INSERT courses(name,teacherId,classroom,selectedCount,maxCount,classTime,createdBy) values(?,?,?,?,?,?,?);`,
@@ -100,11 +123,12 @@ teacherRouter.post(teachersInterfaces.getTemplate, function (req, res) {
   if (!checkParams(res, [paramsConfig.scoreIds], body, 4071)) return
   if (body.scoreIds.length < 1) return res.json({message: '请先选择相应的项目再下载模板', status: 4070})
   querySql(function (connection) {
+    let now = new Date()
+    let date = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()
     connection.query(`SELECT st.name studentName,sc.studentId,co.name courseName,co.id courseId,sc.score
     FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id AND sc.id in (${body.scoreIds.join(',')}))
       INNER JOIN courses co ON sc.courseId=co.id)
-      INNER JOIN teachers te ON te.id = co.teacherId WHERE sc.score < 0`, function (error, results) {
-      console.log(error)
+      INNER JOIN teachers te ON te.id = co.teacherId WHERE sc.score = -1 AND co.classTime <= '${date}'`, function (error, results) {
       if (error) return res.json({message: '查询数据失败', status: 5019})
       let conf = {}
       let width = 20
@@ -207,10 +231,10 @@ teacherRouter.post(teachersInterfaces.addScore, function (req, res) {
   let body = req.body
   if (!checkParams(res, [paramsConfig.courseId, paramsConfig.studentId, {
     k: 'score', validator: v => {
-      if (!/^\d{1,3}(\.\d)?$/.test(v)) return {valid: false, m: '参数score格式错误'}
+      if (!/^\d{1,3}(\.\d)?$/.test(v)) return {valid: false, m: '格式错误'}
       v = +v
       if (v < 0 || v > 100) {
-        return {valid: false, m: '参数score超过限制'}
+        return {valid: false, m: '超过限制'}
       }
       return {valid: true}
     }
@@ -298,8 +322,13 @@ teacherRouter.post(teachersInterfaces.updateCourse, function (req, res) {
         message: '该课程已开课，无法修改',
         status: 5015
       })
-      connection.query(`UPDATE courses SET name = ?,classroom  = ?,maxCount = ?,updatedBy = ?
-        WHERE id = ? AND teacherId=?`,
+      connection.query(`UPDATE courses
+                        SET name      = ?,
+                            classroom = ?,
+                            maxCount  = ?,
+                            updatedBy = ?
+                        WHERE id = ?
+                          AND teacherId = ?`,
         [body.courseName, body.classroom, body.maxCount, decodeURIComponent(headers.name), body.courseId, headers.id],
         function (error2, results2) {
           if (error2) return res.json({message: '修改失败', status: 5016})

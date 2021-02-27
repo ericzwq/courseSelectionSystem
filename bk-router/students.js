@@ -23,17 +23,11 @@ let studentRouter = express.Router()
 /*学生获取成绩分布数据*/
 studentRouter.get(studentsInterfaces.getGradeDistributions, function (req, res) {
   if (!accessControl(req, res, access.ONLY_STUDENTS)) return
-  let query = req.query
   querySql(function (connection) {
     let sql = ''
-    let {teacherName, studentId, studentName, courseName, teacherId, courseId} = query
-    let innerStu = 'INNER JOIN students st ON st.id = sc.studentId'
-    let innerCou = 'INNER JOIN courses co IGNORE INDEX(\`primary\`) ON co.id = sc.courseId'
-    let innerTea = 'INNER JOIN teachers te ON te.id = co.teacherId'
     for (let i = 0, len = scoreLevel.length; i < len; i++) {
-      sql += `SELECT count(1) level${i} FROM scores WHERE studentId = ${req.headers.id};`
+      sql += `SELECT count(1) level${i} FROM scores WHERE ${scoreLevel[i]} AND studentId = ${req.headers.id};`
     }
-    // console.log(sql)
     connection.query(sql, function (error, results) {
       if (error) return res.json({message: '查询数据失败', status: 5022})
       res.json({data: results.flat(1), status: 0})
@@ -85,7 +79,7 @@ studentRouter.post(studentsInterfaces.exportScores, function (req, res) {
     sql_score_id = `AND sc.id in (${scoreIds.join(',') || 0})`
     scoreConf = paramsConfig.scoreIds
   }
-  if (!checkParams(res, [paramsConfig.id, scoreConf], body, 4098)) return
+  if (!checkParams(res, [scoreConf], body, 4098)) return
   querySql(function (connection) {
     connection.query(`SELECT co.name courseName,co.id courseId,te.name teacherName,te.id teacherId,sc.score,co.classTime,
         sc.updatedBy,sc.createdAt,sc.updatedAt
