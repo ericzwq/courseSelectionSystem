@@ -72,7 +72,7 @@ create table scores
     createdAt timestamp                          not null default current_timestamp comment '创建时间',
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );
-create index idx_score on scores(score);
+create index idx_score on scores (score);
 
 /*管理员*/
 drop table if exists admins;
@@ -107,8 +107,8 @@ create table materials
     updatedAt timestamp                          not null default current_timestamp on update current_timestamp comment '修改时间'
 );
 
-insert courses(name, teacherId, classroom, selectedCount, maxCount, createdBy)
-values ('生物科学', 1, '6教学楼', 0, 100, '李杰1');
+insert courses(name, teacherId, classroom, selectedCount, maxCount, classTime, createdBy)
+values ('生物科学', 1, '6教学楼', 0, 100, '2021-6-30', '李杰1');
 
 insert teachers(name, sex, username, phone, email, password)
 values ('李杰', '男', 'teacher', '18945948394', '231396236@qq.com', '123456');
