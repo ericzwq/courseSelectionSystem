@@ -31,7 +31,8 @@ instance.interceptors.response.use(response => {
   loading.close()
   let data = response.data
   if (data.notLogin) {
-    location.href = location.origin + '#/login'
+    location.href = location.origin + location.pathname + '#/login'
+    // location.href = location.origin + '#/login'
   }
   if (data.status && data.status !== 0) {
     Message.error(data.message)

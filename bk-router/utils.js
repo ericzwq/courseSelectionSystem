@@ -43,7 +43,8 @@ exports.checkParams = function (res, config, params, status) {
     if (validator) { // 校验函数优先
       let r = validator(v)
       if (!r.valid) {
-        return res.json({message: '参数' + k + r.m || `参数${k}非法`, status}) === 1
+        let m = r.m
+        return res.json({message: m ? '参数' + k + m : `参数${k}非法`, status}) === 1
       }
     } else if (item.reg) { // 正则
       if (!reg.test(v)) return res.json({message: m || `参数${k}格式非法`, status}) === 1

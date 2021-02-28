@@ -158,7 +158,7 @@ a {
 
   .t-right {
     height: 100%;
-    padding: 10px;
+    padding: 10px 10px 0 10px;
     overflow: auto;
 
     header {
@@ -174,6 +174,12 @@ a {
       .addCourse {
         float: right;
       }
+    }
+    .t-main:after{
+      content: '';
+      clear: both;
+      display: block;
+      overflow: hidden;
     }
   }
 }
