@@ -18,7 +18,7 @@
 
 <script>
   import imageViewer from '../../components/common/image-viewer'
-
+  import {fileURL} from '../../network/index'
   export default {
     name: 'fileDetail',
     components: {
@@ -27,7 +27,7 @@
     props: ['file'],
     data () {
       return {
-        baseURL:'http://localhost:3000/',
+        fileURL,
         showPic: false,
         picUrl: [],
         showVideo: false,
@@ -47,16 +47,16 @@
       getFile () {
         const { fileName, url } = this.file
         if (this.isVideo(fileName)) {
-          this.videoUrl = [this.baseURL + url]
+          this.videoUrl = [this.fileURL + url]
           this.showVideo = true
         }
         if (this.isPicture(fileName)) {
           this.showPic = true
-          this.picUrl = [this.baseURL + url]
+          this.picUrl = [this.fileURL + url]
         }
         if (this.isFile(fileName)) {
           let el = document.createElement('a')
-          el.setAttribute('href', this.baseURL + url)
+          el.setAttribute('href', this.fileURL + url)
           document.body.appendChild(el)
           el.click()
           document.body.removeChild(el)

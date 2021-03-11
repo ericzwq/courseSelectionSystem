@@ -1,7 +1,7 @@
 let path = require('path')
 module.exports = {
   publicPath: process.env.NODE_ENV === 'production'
-    ? '/CourseSelectionSystem/views'
+    ? '/'
     : '/',
   // outputDir: 'dist',
   outputDir: 'views',
@@ -40,7 +40,8 @@ module.exports = {
   // 默认情况下 babel-loader 忽略其中的所有文件 node_modules
   transpileDependencies: [],
   // 生产环境 sourceMap
-  productionSourceMap: true,
+  // productionSourceMap: true,
+  productionSourceMap: false,
 
   // cors 相关 https://jakearchibald.com/2017/es-modules-in-browsers/#always-cors
   // corsUseCredentials: false,
@@ -87,7 +88,7 @@ module.exports = {
   // All options for webpack-dev-server are supported
   // https://webpack.js.org/configuration/dev-server/
   devServer: {
-    open: true,
+    // open: true,
     // host: '127.0.0.1',
     port: 3000,
     https: false,

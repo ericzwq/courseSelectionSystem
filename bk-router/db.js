@@ -1,8 +1,11 @@
 let mysql = require('mysql')
 let pool = mysql.createPool({
   host: 'localhost',
+  // host: 'www.cheesestudio.cn',
   user: 'root',
+  // user: 'zwq',
   password: 'hellowq',
+  // password: 'hellozwq',
   database: 'CourseSelection',
   multipleStatements: true,
   timezone: "08:00"

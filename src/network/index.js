@@ -4,9 +4,13 @@ import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 
 let loading
+let isProduction = process.env.NODE_ENV === 'production'
+export let baseURL = isProduction ? 'http://api.cheesestudio.cn:3000/api/' : 'http://localhost:3000/api/'
+export let fileURL = isProduction ? 'http://api.cheesestudio.cn:3000/' : 'http://localhost:3000/'
 // axios.defaults.headers.common['Authorization'] = sessionStorage.getItem('token');
 let instance = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL,
+  // baseURL: 'http://localhost:3000/api',
   // baseURL: 'http://192.168.7.201:3000/api',
   // baseURL: 'http://192.168.43.104:3000/api',
   // headers: {Authorization: sessionStorage.getItem('token')}//只计算一次

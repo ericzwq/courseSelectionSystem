@@ -108,7 +108,7 @@ create table materials
 );
 
 insert courses(name, teacherId, classroom, selectedCount, maxCount, classTime, createdBy)
-values ('生物科学', 1, '6教学楼', 0, 100, '2021-6-30', '李杰1');
+values ('生物科学', 1, '6教学楼', 1, 100, '2021-6-30', '李杰1');
 
 insert teachers(name, sex, username, phone, email, password)
 values ('李杰', '男', 'teacher', '18945948394', '231396236@qq.com', '123456');

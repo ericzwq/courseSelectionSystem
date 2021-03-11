@@ -16,6 +16,9 @@
       <el-form-item label="手机号" prop="phone">
         <el-input placeholder="请输入手机号" clearable v-model="searchForm.phone" @keydown.enter.native="search"></el-input>
       </el-form-item>
+      <el-form-item label="邮箱" prop="email">
+        <el-input placeholder="请输入邮箱" clearable v-model="searchForm.email" @keydown.enter.native="search"></el-input>
+      </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="searchForm.status" placeholder="请选择">
           <el-option
@@ -30,7 +33,7 @@
         <el-button type="default" @click="search">查询</el-button>
         <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
         <el-button type="text" @click="formCollapse = !formCollapse">
-          {{formCollapse ? '查看更多' : '收起'}}
+          {{ formCollapse ? '查看更多' : '收起' }}
           <i :class="[formCollapse ? 'el-icon-caret-bottom' : 'el-icon-caret-top']"></i>
         </el-button>
       </el-form-item>
@@ -44,10 +47,11 @@
           <el-table-column prop="username" label="用户名" show-overflow-tooltip></el-table-column>
           <el-table-column prop="teacherId" label="教师号" show-overflow-tooltip></el-table-column>
           <el-table-column prop="phone" label="手机号" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="email" label="邮箱" show-overflow-tooltip></el-table-column>
           <el-table-column prop="sex" label="性别" show-overflow-tooltip></el-table-column>
           <el-table-column label="状态" show-overflow-tooltip>
             <template slot-scope="scope">
-              {{ scope.row.status === 1 ? '已启用' : '已禁用'}}
+              {{ scope.row.status === 1 ? '已启用' : '已禁用' }}
             </template>
           </el-table-column>
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
@@ -67,69 +71,70 @@
 </template>
 
 <script>
-  export default {
-    name: 'allTeachers',
-    data() {
-      return {
-        searchForm: {
-          teacherName: '',
-          username: '',
-          teacherId: '',
-          phone: '',
-          status: ''
-        },
-        ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),
-        tableData: [],
-        totalCount: 0,
-        selectedCourseId: '',
-        page: 1,
-        count: 10,
-        tableObj: {},
-        formCollapse: false,
-        statusOptions: [
-          {name: '请选择', value: ''},
-          {name: '已启用', value: 1},
-          {name: '已禁用', value: 0}
-        ]
-      }
-    },
-    mounted() {
-      this.tableObj = this.$refs['table']
-    },
-    methods: {
-      getTable(page, count) {
-        this.page = page
-        this.count = count
-        this.getTableData.call(this, '/admins/allTeachers', this.searchForm)
+export default {
+  name: 'allTeachers',
+  data() {
+    return {
+      searchForm: {
+        teacherName: '',
+        username: '',
+        teacherId: '',
+        phone: '',
+        email: '',
+        status: ''
       },
-      updateTeacherStatus(row) {
-        this.$confirm(`此操作将${row.status === 1 ? '禁用' : '启用'}该用户, 是否继续?`, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          this.axios.post('/admins/updateTeacherStatus', {
-            id: row.teacherId
-          }).then(r => {
-            let data = r.data
-            this.loaded && this.loaded.close()
-            if (data.status === 0) {
-              this.$message.success(data.message)
-              this.tableObj.refresh()
-            }
-          })
+      ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),
+      tableData: [],
+      totalCount: 0,
+      selectedCourseId: '',
+      page: 1,
+      count: 10,
+      tableObj: {},
+      formCollapse: false,
+      statusOptions: [
+        {name: '请选择', value: ''},
+        {name: '已启用', value: 1},
+        {name: '已禁用', value: 0}
+      ]
+    }
+  },
+  mounted() {
+    this.tableObj = this.$refs['table']
+  },
+  methods: {
+    getTable(page, count) {
+      this.page = page
+      this.count = count
+      this.getTableData.call(this, '/admins/allTeachers', this.searchForm)
+    },
+    updateTeacherStatus(row) {
+      this.$confirm(`此操作将${row.status === 1 ? '禁用' : '启用'}该用户, 是否继续?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.axios.post('/admins/updateTeacherStatus', {
+          id: row.teacherId
+        }).then(r => {
+          let data = r.data
+          this.loaded && this.loaded.close()
+          if (data.status === 0) {
+            this.$message.success(data.message)
+            this.tableObj.refresh()
+          }
         })
-      },
-      computeIndex(index) {
-        return (this.page - 1) * this.count + index + 1
-      },
-      // 重置
-      resetForm(formName) {
-        this.$refs[formName].resetFields()
-      },
-      search() {
-        this.tableObj.search()
-      }
+      })
     },
-  }
+    computeIndex(index) {
+      return (this.page - 1) * this.count + index + 1
+    },
+    // 重置
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+    },
+    search() {
+      this.tableObj.search()
+    }
+  },
+}
 </script>

@@ -16,6 +16,9 @@
       <el-form-item label="手机号" prop="phone">
         <el-input placeholder="请输入手机号" clearable v-model="searchForm.phone" @keydown.enter.native="search"></el-input>
       </el-form-item>
+      <el-form-item label="邮箱" prop="email">
+        <el-input placeholder="请输入邮箱" clearable v-model="searchForm.email" @keydown.enter.native="search"></el-input>
+      </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="searchForm.status" placeholder="请选择">
           <el-option
@@ -44,6 +47,7 @@
           <el-table-column prop="username" label="用户名" show-overflow-tooltip></el-table-column>
           <el-table-column prop="studentId" label="学生号" show-overflow-tooltip></el-table-column>
           <el-table-column prop="phone" label="手机号" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="email" label="邮箱" show-overflow-tooltip></el-table-column>
           <el-table-column prop="sex" label="性别" show-overflow-tooltip></el-table-column>
           <el-table-column label="状态" show-overflow-tooltip>
             <template slot-scope="scope">
@@ -78,6 +82,7 @@
           username: '',
           studentId: '',
           phone: '',
+          email:'',
           status: ''
         },
         ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),

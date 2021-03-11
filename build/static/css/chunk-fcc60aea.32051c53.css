@@ -1,0 +1,1 @@
+.text{font-size:14px}.item{height:40px;line-height:40px;border-bottom:1px solid #ebeef5}.item span:first-of-type{display:inline-block;width:80px}.item:nth-of-type(2n){background:#fafafa}.clearFix:after,.clearFix:before{display:table;content:""}.clearFix:after{clear:both}.box-card{width:320px}
