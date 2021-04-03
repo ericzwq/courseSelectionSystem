@@ -6,12 +6,14 @@ let jwt = require('jsonwebtoken')
 let bodyParser = require('body-parser')
 let {querySql} = require('./bk-router/db')
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: false}))
+// app.use(bodyParser.text({limit: '200mb' }));
+app.use(bodyParser.urlencoded({limit: '200mb', extended: true}));
+// app.use(bodyParser.urlencoded({extended: false}))
 app.all("*", function (req, res, next) {
   //设置允许跨域的域名，*代表允许任意域名跨域
   res.header("Access-Control-Allow-Origin", "*");
   //允许的header类型
-  res.header("Access-Control-Allow-Headers", "content-type,Authorization,X-Level,id,name,X-Refresh-Token");//加Authorization防止跨域
+  res.header("Access-Control-Allow-Headers", "content-type,Authorization,level,id,name,X-Refresh-Token");//加Authorization防止跨域
   //跨域允许的请求方式
   res.header("Access-Control-Allow-Methods", "DELETE,PUT,POST,GET,OPTIONS");
   if (req.method.toLowerCase() === 'options')
@@ -27,11 +29,11 @@ app.use((req, res, next) => {
   let params = method === 'GET' ? req.query : req.body
   let now = new Date()
   let time = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate() + ' ' + (now.getUTCHours() + 8) + ':' + now.getMinutes() + ':' + now.getSeconds() + '==>'
-  let head = method + '-->' + time + pathname
+  let head = method + '---->' + time + pathname
   for (let k in params) {
     head = head + '|' + k + ': ' + params[k]
   }
-  console.log(head) // 日志
+  console.log('      ' + head) // 日志
   if (pathname.startsWith('/api/qr/')) { // 扫描二维码
     let query = filterQuery(req.query)
     jwt.verify(query.authorization, query.level + query.id + encodeURIComponent(query.name), function (err, decoded) {
@@ -40,7 +42,7 @@ app.use((req, res, next) => {
     })
   } else if (pathname.startsWith('/api/public/') || pathname.startsWith('/bk-assets/')) { // 无需验证
     return next()
-  } else if (pathname.startsWith('/api/code/')) { // 验证邮箱验证码
+  } /*else if (pathname.startsWith('/api/code/')) { // 验证邮箱验证码
     let body = req.body
     jwt.verify(body.token, body.email.toString() + body.verificationCode, function (err, decoded) {
       if (err) {
@@ -48,17 +50,17 @@ app.use((req, res, next) => {
       }
       next()
     })
-  } else if (pathname.startsWith('/api/authCode/')) { // 验证带用户名的邮箱验证码
+  }*/ else if (pathname.startsWith('/api/authCode/')) { // 验证带账号的邮箱验证码
     let body = req.body
-    console.log(body.username, body.verificationCode)
-    jwt.verify(body.token, body.username.toString() + body.verificationCode, function (err, decoded) {
+    console.log(body.id, body.verificationCode)
+    jwt.verify(body.codeToken, body.id.toString() + body.email + body.verificationCode, function (err, decoded) {
       if (err) {
-        return res.json({message: '验证码错误', status: 5006})
+        return res.json({message: '验证码错误或已过期', status: 5006})
       }
       next()
     })
   } else { // 一般情况登录验证
-    let level = req.headers['x-level']
+    let level = req.headers['level']
     let id = req.headers['id']
     let name = req.headers['name']
     if (!level || !id || !name) return res.json({message: '获取用户信息失败', status: 4067, notLogin: true})

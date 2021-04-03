@@ -6,17 +6,9 @@
     <div class="text item"><span>姓名：</span><span>{{name}}</span></div>
     <div class="text item"><span>身份：</span><span>{{level}}</span></div>
     <div class="text item"><span>性别：</span><span>{{sex}}</span></div>
-    <div class="text item"><span>账号：</span><span>{{username}}</span></div>
     <div class="text item"><span>手机号：</span><span>{{phone}}</span></div>
     <div class="text item"><span>邮箱：</span><span>{{email}}</span></div>
     <div class="text item"><span>编号：</span><span>{{id}}</span></div>
-    <!--    <div class="text item">{{'姓名: ' + name }}</div>-->
-    <!--    <div class="text item">{{'身份: ' + level }}</div>-->
-    <!--    <div class="text item">{{'性别: ' + sex }}</div>-->
-    <!--    <div class="text item">{{'账号: ' + username }}</div>-->
-    <!--    <div class="text item">{{'手机号: ' + phone }}</div>-->
-    <!--    <div class="text item">{{'邮箱: ' + email }}</div>-->
-    <!--    <div class="text item">{{'编号: ' + id }}</div>-->
   </el-card>
 </template>
 <script>

@@ -55,10 +55,10 @@
       this.getFormData()
     },
     methods: {
-      getFormData() {
-        this.ruleForm.courseName = this.courseName
-        this.ruleForm.classroom = this.classroom
-        this.ruleForm.maxCount = this.maxCount
+      getFormData(row) {
+        this.ruleForm.courseName = row.courseName
+        this.ruleForm.classroom = row.classroom
+        this.ruleForm.maxCount = row.maxCount
       },
       submitForm(formName) {
         let res
@@ -79,7 +79,8 @@
     },
     watch: {
       courseName() {
-        this.getFormData()
+        console.log(1)
+        // this.getFormData()
       }
     }
   }

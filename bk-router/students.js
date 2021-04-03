@@ -80,11 +80,13 @@ studentRouter.post(studentsInterfaces.exportScores, function (req, res) {
     scoreConf = paramsConfig.scoreIds
   }
   if (!checkParams(res, [scoreConf], body, 4098)) return
+  let sql_score = getScoreSqlByScoreCode(body.scoreCode)
+  let search = `co.name like '${body.courseName || ''}%' AND te.name like '${body.teacherName || ''}%' ${sql_score}`
   querySql(function (connection) {
     connection.query(`SELECT co.name courseName,co.id courseId,te.name teacherName,te.id teacherId,sc.score,co.classTime,
         sc.updatedBy,sc.createdAt,sc.updatedAt
         FROM courses co, teachers te, scores sc WHERE co.teacherId=te.id AND sc.studentId=${req.headers.id} ${sql_score_id} AND 
-        sc.courseId = co.id ORDER BY co.createdAt DESC ${getLimitStr(body)};`, function (error, results) {
+        sc.courseId = co.id AND ${search} ORDER BY co.createdAt DESC ${getLimitStr(body)};`, function (error, results) {
       if (error) throw error
       let conf = {}
       conf.cols = studentExportScoreCol
@@ -129,15 +131,15 @@ studentRouter.post(studentsInterfaces.unselectCourse, function (req, res) {
 studentRouter.get(studentsInterfaces.selectAllCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_STUDENTS)) return
   let query = filterQuery(req.query)
-  let search = `co.name like '${query.courseName || ''}%' ${query.courseId ? 'AND co.id = ' + query.courseId : ''}
+  let {courseId, maxCount} = query
+  let search = `co.name like '${query.courseName || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''}
     AND te.name like '${query.teacherName || ''}%' AND co.classroom like '${query.classroom}%'
-    ${query.selectedCount ? 'AND co.selectedCount = ' + query.selectedCount : ''}
-    ${query.maxCount ? 'AND co.maxCount = ' + query.maxCount : ''}`
+    AND selectedCount like '${query.selectedCount || ''}%' ${maxCount ? 'AND co.maxCount = \'' + maxCount + '\'' : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} co.id courseId,co.name courseName,te.name teacherName,te.id teacherId,co.classroom,co.selectedCount,co.maxCount,co.classTime,
         co.updatedBy,co.createdAt,co.updatedAt
         FROM courses co,teachers te WHERE co.teacherId=te.id AND ${search} ORDER BY co.updatedAt DESC ${getLimitStr(query)};
-        ${selectTotal};SELECT courseId FROM scores where studentId = ${req.headers.id}`,
+        ${selectTotal}SELECT courseId FROM scores where studentId = ${req.headers.id}`,
       function (error, results) {
         if (error) return res.json({message: '数据查询失败', status: 4006})
         results[1] = {totalCount: results[1][0].totalCount}

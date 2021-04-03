@@ -9,7 +9,7 @@ const routes = [
   {path: '/', redirect: '/courseselection/index'},
   {path: '/login', component: () => import('@/components/common/login.vue'), meta: {title: '登录'}},
   {path: '/findPsw', component: () => import('@/components/common/findPsw.vue'), meta: {title: '找回密码'}},
-  {path: '/register', component: () => import('@/components/common/register.vue'), meta: {title: '注册'}},
+  {path: '/bindInfo', component: () => import('@/components/common/bindInfo.vue'), meta: {title: '注册'}},
   {path: '/teachers', redirect: '/courseselection/index'},
   {path: '/students', redirect: '/courseselection/index'},
   {path: '/admins', redirect: '/courseselection/index'},

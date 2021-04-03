@@ -26,8 +26,9 @@ let teacherRouter = express.Router()
 teacherRouter.get(teachersInterfaces.getAllCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
+  let {courseId} = query
   let search = `co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' AND
-    co.classroom like '${query.classroom || ''}%' ${query.courseId ? 'AND co.id = ' + query.courseId : ''}`
+    co.classroom like '${query.classroom || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} co.name courseName,co.id courseId,te.id teacherId,te.name teacherName,co.classroom,co.maxCount,co.classTime,
         co.selectedCount,co.createdBy,co.updatedBy,co.createdAt,co.updatedAt
@@ -67,6 +68,7 @@ teacherRouter.post(teachersInterfaces.addCourse, function (req, res) {
 teacherRouter.get(teachersInterfaces.getStuScores, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
+  let {studentId} = query
   let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + req.headers.id
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let search = `st.name like '${query.studentName || ''}%' AND co.name like '${query.courseName || ''}%'
@@ -80,10 +82,10 @@ teacherRouter.get(teachersInterfaces.getStuScores, function (req, res) {
     FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id)
       INNER JOIN courses co IGNORE INDEX(\`primary\`) ON sc.courseId=co.id ${sql_student})
       INNER JOIN teachers te ON te.id = co.teacherId 
-      WHERE ${query.studentId ? 'st.id = ' + query.studentId : "st.id >= ''"} AND ${search}
+      WHERE ${studentId ? 'st.id = \'' + studentId + '\'' : "st.id >= ''"} AND ${search}
       ${getLimitStr(query)};${selectTotal};` // ORDER BY sc.updatedAt DESC
     connection.query(sql, function (error, results) {
-      if (error) throw error
+      if (error) return res.json({message: '查询数据失败', status: 5032})
       results[1] = {totalCount: results[1][0].totalCount}
       res.json({message: 'ok', status: 0, data: results})
     })
@@ -175,7 +177,7 @@ teacherRouter.post(teachersInterfaces.upScoreFile, function (req, res) {
   let form = new multiparty.Form()
   form.encoding = 'utf-8'
   form.uploadDir = './bk-assets/upload'
-  form.maxFilesSize = 1024 * 1024
+  form.maxFilesSize = 1048576 // 1024 * 1024
   form.parse(req, function (err, fields, files) {
     if (err) return res.json({message: '上传失败', status: 4072})
     let file = files.file[0]
@@ -186,7 +188,7 @@ teacherRouter.post(teachersInterfaces.upScoreFile, function (req, res) {
       let date = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()
       connection.query(`SELECT id FROM courses WHERE teacherId = ${headers.id} AND classTime <= '${date}';`,
         function (error, results) { // 根据教师id过滤该教师没有发布的课程得到课程id
-          if (error) throw error
+          if (error) return res.json({message: '查询 数据失败', status: 4073})
           let courseIds = []
           results.forEach(i => courseIds.push(i.id))
           // console.log('courseIds',courseIds)
@@ -272,14 +274,14 @@ teacherRouter.post(teachersInterfaces.addScoreDetail, function (req, res) {
   let form = new multiparty.Form()
   form.encoding = 'utf-8'
   form.uploadDir = upScoreDetailsDir
-  form.maxFilesSize = 1024 * 1024
+  form.maxFilesSize = 524288000 // 500 * 1024 * 1024
   querySql(function (connection) {
     connection.query(`SELECT score FROM scores WHERE id = ${params.scoreId} AND score > -1`, function (error, result) {
       if (error) return res.json({message: '查询数据失败', status: 4079})
       if (result.length < 1) return res.json({message: '请先录入成绩', status: 4080})
       form.parse(req, function (err, fields, files) {
-        let file = files.file[0]
         if (err) return res.json({message: '上传文件失败', status: 4076})
+        let file = files.file[0]
         connection.query(`INSERT materials(fileName, url, size, scoreId,createdBy) VALUES (?,?,?,?,?)`,
           [file.originalFilename, file.path, file.size, params.scoreId, decodeURIComponent(req.headers.name)],
           function (error2, results2) {
@@ -294,7 +296,8 @@ teacherRouter.post(teachersInterfaces.addScoreDetail, function (req, res) {
 teacherRouter.get(teachersInterfaces.getAddedCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
-  let search = `name like '${query.courseName || ''}%' ${query.courseId ? 'AND id = ' + query.courseId : ''} AND classroom like '${query.classroom || ''}%' 
+  let {courseId} = query
+  let search = `name like '${query.courseName || ''}%' ${courseId ? 'AND id = \'' + courseId + '\'' : ''} AND classroom like '${query.classroom || ''}%' 
     AND selectedCount like '${query.selectedCount || ''}%'`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} name courseName,classroom,selectedCount,id courseId,maxCount,classTime,createdBy,

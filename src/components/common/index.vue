@@ -178,7 +178,14 @@ export default {
   },
   updated() {
     this.$nextTick(() => { // 主要处理更新后图表的宽度问题
-      let w = document.documentElement.clientWidth
+      let children = document.body.children, containerDom
+      for (let i = 0, len = children.length; i < len; i++) {
+        if (children[i].classList.contains('t-container')) {
+          containerDom = children[i]
+          break
+        }
+      }
+      let w = containerDom.clientWidth
       let width = w <= 1230 ? (w - 220) * 0.9 : (w - 220) / 2 - 5
       let echartsDom = this.$refs['echarts']
       let echarts2Dom = this.$refs['echarts2']

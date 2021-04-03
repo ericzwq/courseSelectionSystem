@@ -41,8 +41,8 @@
         this.getTable()
       },
       search() {
-        this.page = 1
-        this.count = 10
+        // this.page = 1
+        // this.count = 10
         this.getTable()
       },
       getTable() {

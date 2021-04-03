@@ -5,10 +5,6 @@
         <el-input placeholder="请输入教师名" clearable v-model="searchForm.teacherName"
                   @keydown.enter.native="search"></el-input>
       </el-form-item>
-      <el-form-item label="用户名" prop="username">
-        <el-input placeholder="请输入用户名" clearable v-model="searchForm.username"
-                  @keydown.enter.native="search"></el-input>
-      </el-form-item>
       <el-form-item label="教师号" prop="teacherId">
         <el-input placeholder="请输入教师号" clearable v-model="searchForm.teacherId"
                   @keydown.enter.native="search"></el-input>
@@ -44,7 +40,6 @@
           <el-table-column type="index" :index="computeIndex" label="序号" width="60"
                            show-overflow-tooltip></el-table-column>
           <el-table-column prop="teacherName" label="教师名" show-overflow-tooltip></el-table-column>
-          <el-table-column prop="username" label="用户名" show-overflow-tooltip></el-table-column>
           <el-table-column prop="teacherId" label="教师号" show-overflow-tooltip></el-table-column>
           <el-table-column prop="phone" label="手机号" show-overflow-tooltip></el-table-column>
           <el-table-column prop="email" label="邮箱" show-overflow-tooltip></el-table-column>
@@ -77,7 +72,6 @@ export default {
     return {
       searchForm: {
         teacherName: '',
-        username: '',
         teacherId: '',
         phone: '',
         email: '',
@@ -105,7 +99,12 @@ export default {
     getTable(page, count) {
       this.page = page
       this.count = count
-      this.getTableData.call(this, '/admins/allTeachers', this.searchForm)
+      this.getTableData.call(this, '/admins/allTeachers', this.searchForm, data => {
+        data[0].forEach(i => {
+          if (!i.phone) i.phone = '--'
+          if (!i.email) i.email = '--'
+        })
+      })
     },
     updateTeacherStatus(row) {
       this.$confirm(`此操作将${row.status === 1 ? '禁用' : '启用'}该用户, 是否继续?`, '提示', {

@@ -6,7 +6,8 @@ let adminRouter = express.Router()
 adminRouter.get(adminsInterfaces.getTeacherCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
-  let search = `co.name like '${query.courseName || ''}%' ${query.courseId ? 'AND co.id = ' + query.courseId : ''}
+  let {courseId} = query
+  let search = `co.name like '${query.courseName || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''}
     AND te.name like '${query.teacherName || ''}%' AND classroom like '${query.classroom || ''}%'`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} co.id courseId,co.name courseName,te.name teacherName,co.classroom,co.selectedCount,
@@ -48,6 +49,7 @@ adminRouter.post(adminsInterfaces.updateCourse, function (req, res) {
 adminRouter.get(adminsInterfaces.getAllScores, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
+  let {studentId} = query
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let search = `st.name like '${query.studentName || ''}%' AND co.name like '${query.courseName || ''}%'
     AND te.name like '${query.teacherName || ''}%' ${sql_score}`
@@ -57,7 +59,7 @@ adminRouter.get(adminsInterfaces.getAllScores, function (req, res) {
     FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id)
       INNER JOIN courses co IGNORE INDEX(\`primary\`) ON sc.courseId=co.id)
       INNER JOIN teachers te ON te.id = co.teacherId
-      WHERE ${query.studentId ? 'st.id = ' + query.studentId : "st.id >= ''"} AND ${search}
+      WHERE ${studentId ? 'st.id = \'' + studentId + '\'' : "st.id >= ''"} AND ${search}
       ${getLimitStr(query)};${selectTotal};`, function (error, results) {
       if (error) return res.json({message: '数据查询失败', status: 4036})
       results[1] = {totalCount: results[1][0].totalCount}
@@ -97,11 +99,12 @@ adminRouter.post(adminsInterfaces.updateScore, function (req, res) {
 adminRouter.get(adminsInterfaces.getAllTeachers, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
-  let search = `name like '${query.teacherName || ''}%' AND username like '${query.username || ''}%'
-    ${query.teacherId ? 'AND id = ' + query.teacherId : ''} AND phone like '${query.phone || ''}%'
-    AND email like '${query.email || ''}%' ${query.status ? 'AND status = ' + query.status : ''}`
+  let {phone, teacherId, email, status} = query
+  let search = `name like '${query.teacherName || ''}%'
+    ${teacherId ? 'AND id = \'' + teacherId + '\'' : ''} ${phone ? 'AND phone = \'' + phone + '\'' : ''}
+    ${email ? 'AND email like \'' + email + '%\'' : ''} ${status ? 'AND status = ' + status : ''}`
   querySql(function (connection) {
-    connection.query(`SELECT ${totalRows} id teacherId,name teacherName,phone,email,sex,username,status,createdAt,updatedAt,status
+    connection.query(`SELECT ${totalRows} id teacherId,name teacherName,phone,email,sex,status,createdAt,updatedAt,status
     FROM teachers WHERE ${search} ${getLimitStr(query)};${selectTotal}`, // ORDER BY updatedAt DESC
       function (error, results) {
         if (error) return res.json({message: '数据查询失败', status: 4038})
@@ -135,11 +138,12 @@ adminRouter.post(adminsInterfaces.updateTeacherStatus, function (req, res) {
 adminRouter.get(adminsInterfaces.getAllStudents, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
-  let search = `name like '${query.studentName || ''}%' AND username like '${query.username || ''}%'
-    ${query.studentId ? 'AND id = ' + query.studentId : ''} AND phone like '${query.phone || ''}%'
-    AND email like '${query.email || ''}%' ${query.status ? 'AND status = ' + query.status : ''}`
+  let {phone, studentId, email, status, studentName} = query
+  let search = `name like '${query.studentName || ''}%'
+    ${studentId ? 'AND id = \'' + studentId + '\'' : ''} ${phone ? 'AND phone = \'' + phone + '\'' : ''}
+    ${email ? 'AND email like \'' + email + '%\'' : ''} ${status ? 'AND status = ' + status : ''}`
   querySql(function (connection) {
-    connection.query(`SELECT ${totalRows} id studentId,name studentName,phone,email,sex,username,status,createdAt,updatedAt,status
+    connection.query(`SELECT ${totalRows} id studentId,name studentName,phone,email,sex,status,createdAt,updatedAt,status
         FROM students WHERE ${search}
         ${getLimitStr(query)}; ${selectTotal}`, function (error, results) {
       if (error) return res.json({message: '数据查询失败', status: 4041})

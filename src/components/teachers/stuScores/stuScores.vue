@@ -77,9 +77,9 @@
         </div>
       </el-dialog>
       <el-dialog class="init-dialog" title="添加成绩详情" width="450px" :close-on-click-modal="false"
-                 :visible.sync="addDialogVisible">
+                 :visible.sync="addDialogVisible" @close="handleClose">
         <el-form label-width="100px">
-          <el-form-item label="文件上传" prop="uploadedFiles" ref="uploadedFiles">
+          <el-form-item label="文件上传" prop="uploadedFiles">
             <file-upload
                 style="width: 100%;"
                 acceptType="image/jpeg,image/png,
@@ -194,13 +194,17 @@ export default {
   methods: {
     test() {
       // 添加用户类
-      let start = 2001
+      // let start = 1
       // for (let i = start; i < start + 500; i++) {
-      //   this.axios.get('http://localhost:3000/test/insertStudents', {params: {i}})
+      //   this.axios.get('http://www.cheesestudio.cn:3000/test/insertTeachers', {params: {i}})
       // }
-      // 添加课程,选课
+      // 添加课程
       // for (let i = 1; i <= 1000; i++) {
-      //   this.axios.get('http://localhost:3000/test/selectCourses', {params: {i: Math.ceil(Math.random() * 200000)}})
+      //   this.axios.get('http://www.cheesestudio.cn:3000/test/addCourses', {params: {i: 990102030201 + Math.ceil(Math.random() * 200000)}})
+      // }
+      // 选课
+      // for (let i = 1; i <= 1000; i++) {
+      //   this.axios.get('http://www.cheesestudio.cn:3000/test/selectCourses', {params: {i: 200102030201 + Math.ceil(Math.random() * 1000000)}})
       // }
       // 导出
       // this.axios.get('http://localhost:3000/test/export')
@@ -267,8 +271,11 @@ export default {
         })
       })
     },
-    addDetail(row) {
+    handleClose() {
       this.clearFiles = true
+      this.$nextTick(() => this.clearFiles = false)
+    },
+    addDetail(row) {
       this.currentScoreId = row.scoreId
       this.addDialogVisible = true
     },

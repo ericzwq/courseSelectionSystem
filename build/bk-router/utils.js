@@ -19,7 +19,7 @@ exports.getJwt = function (body, secret, expiresIn) {
 
 exports.accessControl = function (req, res, access, status) {
   if (access.length < 1) return
-  let level = req.headers['x-level']
+  let level = req.headers['level']
   if (access.indexOf(level) > -1) return true
   return res.json({message: '无权访问', status: status || 1}) === 1
 }
@@ -39,7 +39,7 @@ exports.checkParams = function (res, config, params, status) {
     // let fixed = item.fixed  // 固定长度
     let validator = item.validator
     let reg = item.reg
-    if (!v && v.toString() !== '0') return res.json({message: m || `参数${k}缺失`, status}) === 1 // res.json返回值为res，永远不会等于1，所以返回false
+    if (!v && (v !== 0)) return res.json({message: m || `参数${k}缺失`, status}) === 1 // res.json返回值为res，永远不会等于1，所以返回false
     if (validator) { // 校验函数优先
       let r = validator(v)
       if (!r.valid) {
@@ -64,7 +64,7 @@ exports.checkParams = function (res, config, params, status) {
           //   if (!numReg.test(v[j])) return res.json({message: m || `参数${k}的子项须为整数`, status}) === 1
           // }
         } else if (type === 'email') { // 邮箱
-          if (!/\w+@\w+.com$/.test(v)) return res.json({message: m || '邮箱格式错误', status}) === 1
+          if (!/\w+@\w+.\w+$/.test(v)) return res.json({message: m || '邮箱格式错误', status}) === 1
           v = v.toString()
           if (max && v.length > max) {
             return res.json({message: m || `参数${k}的长度须小于或等于${max}`, status}) === 1

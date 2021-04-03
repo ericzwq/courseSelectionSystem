@@ -1,4 +1,5 @@
 let express = require('express')
+let jwt = require('jsonwebtoken')
 let {
   querySql,
   paramsConfig,
@@ -103,10 +104,10 @@ router.get('/test/insertStudents', function (req, res) {
   querySql(function (connection) {
     let j = req.query.i
     let len = 400
-    let sql_head = 'insert students(name, sex, phone, username, password) values'
+    let sql_head = 'insert students(name, sex, password) values'
     let sql_body = ''
     for (let i = 1; i <= len; i++) {
-      sql_body += `('学生${j + ':' + i}', '${i % 2 === 0 ? '男' : '女'}', '15593749832', 'student${i * j}', '123456')${i < len ? ',' : ';'}`
+      sql_body += `('学生${j + ':' + i}', '${i % 2 === 0 ? '男' : '女'}', '111111')${i < len ? ',' : ';'}`
     }
     connection.query(sql_head + sql_body, function (error, results) {
       if (error) throw error
@@ -118,11 +119,11 @@ router.get('/test/insertStudents', function (req, res) {
 router.get('/test/insertTeachers', function (req, res) {
   querySql(function (connection) {
     let j = req.query.i
-    let sql_head = 'insert teachers(name,sex, username, phone, password) values'
+    let sql_head = 'insert teachers(name,sex, password) values'
     let sql_body = ''
     let len = 400
     for (let i = 1; i <= len; i++) {
-      sql_body += `('教师${j + ':' + i}', '${i % 2 === 0 ? '男' : '女'}', 'teacher${i * j}', '18945948394', '123456')${i < len ? ',' : ';'}`
+      sql_body += `('教师${j + ':' + i}', '${i % 2 === 0 ? '男' : '女'}', '111111')${i < len ? ',' : ';'}`
     }
     connection.query(sql_head + sql_body, function (error, results) {
       if (error) throw error
@@ -134,11 +135,11 @@ router.get('/test/insertTeachers', function (req, res) {
 router.get('/test/insertAdmins', function (req, res) {
   let j = req.query.i
   querySql(function (connection) {
-    let sql_head = 'insert into admins(name, sex, username, phone, password) values'
+    let sql_head = 'insert admins(name, sex, password) values'
     let sql_body = ''
     let len = 400
     for (let i = 1; i <= len; i++) {
-      sql_body += `('管理员${j + ':' + i}', '${i % 2 === 0 ? '男' : '女'}', 'admin${i * j}', '18948394839', '123456')${i < len ? ',' : ';'}`
+      sql_body += `('管理员${j + ':' + i}', '${i % 2 === 0 ? '男' : '女'}', '111111')${i < len ? ',' : ';'}`
     }
     connection.query(sql_head + sql_body, function (error, results) {
       if (error) throw error
@@ -150,14 +151,14 @@ router.get('/test/insertAdmins', function (req, res) {
 router.get('/test/addCourses', function (req, res) {
   querySql(function (connection) {
     let j = req.query.i
+    let _j = j.toString().substr(-3)
     connection.query(`SELECT name FROM teachers WHERE id = ${j}`, function (error, results) {
       if (error) throw error
       if (results.length < 1) return res.end('no teacher id')
       let len = 20
-      sql = `insert into courses(name, teacherId, classroom, selectedCount, maxCount, createdBy)
-             values`
+      sql = `insert courses(name, teacherId, classroom, classTime, selectedCount, maxCount, createdBy) values`
       for (let i = 1; i <= len; i++) {
-        sql += `('课程${j + ':' + i}', ${j}, '教室${i}', 0, 100,'${results[0].name}')${i < len ? ',' : ';'}`
+        sql += `('课程${_j + ':' + i}', ${j}, '教室${i}','2021-6-30', 0, 100,'${results[0].name}')${i < len ? ',' : ';'}`
       }
       connection.query(sql, function (error2, results2) {
         if (error2) throw error2
@@ -174,10 +175,9 @@ router.get('/test/selectCourses', function (req, res) {
       if (error) throw error
       if (results.length < 1) return res.end('no student id')
       let len = 20
-      sql = `insert into scores(studentId, courseId, score, createdBy)
-             values `
+      sql = `insert scores(studentId, courseId, score, createdBy) values `
       for (let i = 1; i <= len; i++) {
-        sql += `(${j}, ${Math.ceil(Math.random() * 171200)}, ${Math.ceil(Math.random() * 101) - 1},'${results[0].name}')${i < len ? ',' : ';'}`
+        sql += `(${j}, ${Math.ceil(Math.random() * 200000)}, ${Math.ceil(Math.random() * 101) - 1},'${results[0].name}')${i < len ? ',' : ';'}`
       }
       connection.query(sql, function (error, results) {
         if (error) throw error
@@ -203,7 +203,8 @@ router.get('/test/export', function (req, res) {
                       FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id)
                           INNER JOIN courses co ON sc.courseId = co.id)
                                INNER JOIN teachers te ON te.id = co.teacherId
-                      ORDER BY sc.updatedAt DESC limit 0,40000`, function (error, results) {
+                      ORDER BY sc.updatedAt DESC
+                      limit 0,40000`, function (error, results) {
       if (error) throw error
       let conf = {}
       let width = 20
@@ -219,15 +220,15 @@ router.get('/test/export', function (req, res) {
 router.post(commonInterfaces.login, function (req, res) {
   let body = req.body
   let level = body.level
-  if (!checkParams(res, [paramsConfig.level, paramsConfig.username, paramsConfig.password], body, 4055)) return
+  if (!checkParams(res, [paramsConfig.level, paramsConfig.id, paramsConfig.password], body, 4055)) return
   if (level !== 'students' && level !== 'teachers' && level !== 'admins') {
     return res.json({message: '未知的身份', status: 4056, notLogin: true})
   }
   querySql(function (connection) {
-    connection.query(`SELECT password,id,phone,email,name,status,sex FROM ${level} WHERE username = '${body.username}' LIMIT 1;`,
+    connection.query(`SELECT password,id,phone,email,name,status,sex FROM ${level} WHERE id = '${body.id}' LIMIT 1;`,
       function (error, results) {
         if (error) throw error
-        if (results.length === 0) return res.json({message: '用户名不存在', status: 4057})
+        if (results.length === 0) return res.json({message: '用户不存在', status: 4057})
         let sqlData = results[0]
         let password = sqlData.password
         if (sqlData.status !== 1) return res.json({message: '账号已禁用！请联系管理员', status: 4084})
@@ -238,7 +239,7 @@ router.post(commonInterfaces.login, function (req, res) {
           // refreshToken: getJwt(body, level, 3600 * 24 * 7),
           routers: level === 'admins' ? adminRouters : level === 'teachers' ? teacherRouters : studentRouters,
           status: 0,
-          id: sqlData.id,
+          // id: sqlData.id,
           phone: sqlData.phone,
           email: sqlData.email,
           name: sqlData.name,
@@ -248,23 +249,27 @@ router.post(commonInterfaces.login, function (req, res) {
   })
 })
 
-function getVerificationCode(req, res, isAuth) {
+function getVerificationCode(req, res, isInit) {
   let query = req.query
+  let id = query.id
   let email = query.email
-  if (!checkParams(res, [paramsConfig.email, paramsConfig.isRegister], query, 4099)) return
-  if (isAuth && !checkParams(res, [paramsConfig.username], query, 5004)) return // 非注册验证用户名
+  if (!checkParams(res, [paramsConfig.email, paramsConfig.id], query, 4099)) return
   let levels = ['students', 'teachers', 'admins']
-  let sql = ''
-  levels.forEach(i => {
-    sql += `SELECT email FROM ${i} WHERE email = '${email}' ${isAuth ? 'AND username = \'' + query.username + '\'' : ''} LIMIT 1;`
-  })
+  let _sql = ''
+  levels.forEach(i => _sql += `SELECT email FROM ${i} WHERE email = '${email}' LIMIT 1;`)
+  let sql = `SELECT email FROM ${req.headers.level} WHERE id = ${id};` + (isInit ? _sql : '')
   querySql(function (connection) {
     connection.query(sql, function (error, results) {
       if (error) return res.json({message: '查询数据失败', status: 5002})
-      if (!isAuth) { // 注册
-        if (results.flat(Infinity).length > 0) return res.json({message: '该邮箱已注册', status: 5003})
-      } else {
-        if (results.flat(Infinity).length < 1) return res.json({message: '用户名与邮箱不匹配', status: 5005})
+      if (results.length < 1 || results[0].length < 1) return res.json({message: '用户不存在', status: 5028})
+      let _email = results[0][0]['email']
+      if (isInit) { // 信息认证
+        let emails = results.slice(1)
+        if (_email) return res.json({message: '用户信息已认证', status: 5030})
+        if (emails.flat(Infinity).length > 0) return res.json({message: '该邮箱已存在', status: 5031})
+      } else { // 找回密码
+        if (!_email) return res.json({message: '请先绑定邮箱', status: 5003})
+        if (_email !== email) return res.json({message: '用户名与邮箱不匹配', status: 5005})
       }
       let code = Math.random().toString().substr(-6)
       console.log('code:', code, 'time:', new Date())
@@ -276,86 +281,89 @@ function getVerificationCode(req, res, isAuth) {
         text: '您的验证码为：' + code + '，有效期为10分钟，请尽快使用', // 标题
         // html: '<b>Hello world ?</b>' // html 内容
       }
-
       transporter.sendMail(mailOptions, function (error, info) {
-        if (error) return res.json({message: '发送失败', status: 5000})
-        let secret = (isAuth ? query.username.toString() : email.toString()) + code
-        let token = getJwt({username: query.username}, secret, 600)
+        if (error) {
+          if (error.responseCode === 550) {
+            return res.json({message: '邮箱不存在', status: 5029})
+          } else {
+            return res.json({message: '发送失败', status: 5000})
+          }
+        }
+        // let secret = (isInit ? query.id.toString() : email.toString()) + code
+        let secret = id.toString() + email + code
+        let token = getJwt({id: query.id}, secret, 600)
         res.json({message: '验证码发送成功', status: 0, token})
       });
     })
   })
 }
 
-/*注册获取邮箱验证码*/
+/*绑定信息获取邮箱验证码*/
 router.get(commonInterfaces.verificationCode, function (req, res) {
-  getVerificationCode(req, res, false)
+  getVerificationCode(req, res, true)
 })
 /*找回密码获取邮箱验证码*/
 router.get(commonInterfaces.authVerificationCode, function (req, res) {
-  getVerificationCode(req, res, true)
+  getVerificationCode(req, res, false)
 })
-/*注册-->学生邀请码111 教师222 管理员333*/
-router.post(commonInterfaces.register, function (req, res) {
+/*信息认证-->学生邀请码111 教师222 管理员333*/
+router.post(commonInterfaces.bindInfo, function (req, res) {
   let body = req.body
   let invitation = body.invitation.toString()
-  let level = body.level
-  let username = body.username
+  let {level, id} = req.headers
   let email = body.email
-  if (!checkParams(res, [paramsConfig.invitation, paramsConfig.level, paramsConfig.name, paramsConfig.username,
-    paramsConfig.password, paramsConfig.sex, paramsConfig.email, {
-      k: 'phone', reg: /^1\d{10}$/
-    }], body, 4059)) return
+  if (!checkParams(res, [paramsConfig.invitation, paramsConfig.password, paramsConfig.email, paramsConfig.verificationCode, {
+    k: 'phone', reg: /^1\d{10}$/
+  }], body, 4059)) return
   /*验证邀请码*/
   if ((level === 'students' && invitation !== '111') || (level === 'teachers' && invitation !== '222') ||
     (level === 'admins') && invitation !== '333') return res.json({message: '邀请码错误', status: 5009})
-  querySql(function (connection) {
-    connection.query(`SELECT username,email FROM ${body.level} WHERE username = '${username}' OR email = '${email}'`, function (error, results) {
-      if (error) throw error
-      // if (results.flat(Infinity).length === 0) return res.json({message: '暂无数据', status: 5010})
-      for (let i = 0, l = results.length; i < l; i++) {
-        if (results[i].username === username) {
-          return res.json({message: '用户名已存在', status: 5011})
-        } else if (results[i].email === email) {
-          return res.json({message: '邮箱已存在', status: 5018})
-        }
-      }
-      connection.query(`INSERT ${level}(name, sex, phone, email, username, password) VALUES(?,?,?,?,?,?);`,
-        [body.name, body.sex, body.phone, email, username, body.password], function (error2, results2) {
-          if (error2) throw error2
-          if (results2.affectedRows > 0) {
-            res.json({
-              message: '注册成功',
-              token: getJwt(body, level + results2.insertId + encodeURIComponent(body.name), 3600 * 120),
-              status: 0,
-              name: body.name,
-              phone: body.phone,
-              email: body.email,
-              routers: level === 'admins' ? adminRouters : level === 'teachers' ? teacherRouters : studentRouters,
-              id: results2.insertId,
-              sex: body.sex
-            })
-          } else {
-            res.json({message: '注册失败', status: 5012})
-          }
-        })
+  jwt.verify(body.codeToken, id + email + body.verificationCode, function (err, decoded) {
+    if (err) return res.json({message: '验证码错误或已过期', status: 5001})
+    querySql(function (connection) {
+      connection.query(`SELECT email FROM ${level} WHERE id = ${id}`, function (error, results) {
+        if (error) return res.json({message: '查询数据失败', status: 5025})
+        if (results.length < 1) return res.json({message: '用户不存在', status: 5010})
+        if (results[0].email) return res.json({message: '用户信息已认证', status: 5018})
+        connection.query(`UPDATE ${level} set phone = ?, email = ?, password = ? WHERE id = ?;`,
+          [body.phone, email, body.password, id], function (error2, results2) {
+            if (error2) return res.json({message: '查询数据失败', status: 5011})
+            if (results2.affectedRows > 0) {
+              res.json({
+                message: '操作成功',
+                // token: getJwt(body, level + id + encodeURIComponent(body.name), 3600 * 120),
+                status: 0,
+                name: body.name,
+                phone: body.phone,
+                email: body.email,
+                // routers: level === 'admins' ? adminRouters : level === 'teachers' ? teacherRouters : studentRouters,
+                sex: body.sex
+              })
+            } else {
+              res.json({message: '操作失败', status: 5012})
+            }
+          })
+      })
     })
   })
 })
 /*找回密码*/
 router.post(commonInterfaces.findPsw, function (req, res) {
   let body = req.body
+  let id = body.id
   let level = body.level
-  if (!checkParams(res, [paramsConfig.level, paramsConfig.username, paramsConfig.password, paramsConfig.email], body, 4060)) return
+  if (!checkParams(res, [paramsConfig.level, paramsConfig.id, paramsConfig.password, paramsConfig.email], body, 4060)) return
   querySql(function (connection) {
-    connection.query(`SELECT count(1) as count,phone,email,id,name,sex,status FROM ${level} WHERE username = ?`, [body.username],
+    connection.query(`SELECT phone,email,id,name,sex,status FROM ${level} WHERE id = ?`, [id],
       function (error, results) {
-        if (error) throw error
+        if (error) return res.json({message: '查询数据失败', status: 5026})
+        if (results.length < 1) return res.json({message: '该用户不存在', status: 4061})
         let sqlData = results[0]
-        if (sqlData.count === 0) return res.json({message: '该用户不存在', status: 4061})
         if (sqlData.status !== 1) return res.json({message: '该账户已禁用！', status: 4085})
-        if (sqlData.email !== body.email) return res.json({message: '邮箱与用户名不匹配', status: 4062})
-        connection.query(`UPDATE ${level} SET password=? WHERE username=?`, [body.password, body.username], function (error2, results2) {
+        let email = sqlData.email
+        if (!email) return res.json({message: '信息未认证，请联系老师获取默认密码', status: 5027})
+        if (email !== body.email) return res.json({message: '邮箱与用户名不匹配', status: 4062})
+        connection.query(`UPDATE ${level} SET password=? WHERE id=?`, [body.password, id], function (error2, results2) {
           if (error2) return res.json({message: '修改失败', status: 4063})
           if (results2.affectedRows > 0) {
             res.json({
@@ -378,7 +386,7 @@ router.post(commonInterfaces.findPsw, function (req, res) {
 router.post(commonInterfaces.updatePsw, function (req, res) {
   if (!accessControl(req, res, access.OVER_STUDENTS)) return
   let body = req.body
-  let level = req.headers['x-level']
+  let level = req.headers['level']
   body.level = level
   if (!checkParams(res, [paramsConfig.level, paramsConfig.newPsw, paramsConfig.oldPsw], body, 4064)) return
   querySql(function (connection) {
@@ -412,9 +420,9 @@ router.get(commonInterfaces.getAllGradeDistributions, function (req, res) {
     let innerTea = 'INNER JOIN teachers te ON te.id = co.teacherId'
     for (let i = 0, len = scoreLevel.length; i < len; i++) {
       sql += `SELECT count(1) level${i} FROM scores sc ${(studentId || studentName) ? innerStu : ''} ${(teacherName || courseName || teacherId) ? innerCou : ''} ${(teacherName ? innerTea : '')}
-      WHERE ${scoreLevel[i]} ${studentId ? 'AND st.id = ' + studentId : ''} ${studentName ? 'AND st.name = \'' + studentName + '\'' : ''}
-      ${courseName ? 'AND co.name = \'' + courseName + '\'' : ''} ${teacherName ? 'AND te.name = \'' + teacherName + '\'' : ''} ${teacherId ? 'AND co.teacherId = ' + teacherId : ''}
-      ${courseId ? 'AND sc.courseId = ' + courseId : ''};`
+      WHERE ${scoreLevel[i]} ${studentId ? 'AND st.id = \'' + studentId + '\'' : ''} ${studentName ? 'AND st.name = \'' + studentName + '\'' : ''}
+      ${courseName ? 'AND co.name = \'' + courseName + '\'' : ''} ${teacherName ? 'AND te.name = \'' + teacherName + '\'' : ''} ${teacherId ? 'AND co.teacherId = \'' + teacherId + '\'' : ''}
+      ${courseId ? 'AND sc.courseId = \'' + courseId + '\'' : ''};`
     }
     // console.log(sql)
     connection.query(sql, function (error, results) {
@@ -428,7 +436,7 @@ router.post(commonInterfaces.exportStudentScore, function (req, res) {
   if (!accessControl(req, res, access.OVER_TEACHERS)) return
   let body = filterQuery(req.body)
   let scoreIds = body.scoreIds
-  let limit = req.headers['x-level'] === 'admins' ? 100000 : 10000
+  let limit = req.headers['level'] === 'admins' ? 100000 : 10000
   let sql_score_id = ''
   if (!Array.isArray(scoreIds)) return res.json({message: '参数scoreIds须为数组', status: 4067})
   let scoreConf
@@ -463,14 +471,15 @@ router.post(commonInterfaces.exportStudentScore, function (req, res) {
 router.get(commonInterfaces.getScoreDetails, function (req, res) {
   if (!accessControl(req, res, access.OVER_STUDENTS)) return
   let query = filterQuery(req.query)
-  let level = req.headers['x-level']
+  let {courseId, studentId} = query
+  let level = req.headers['level']
   let id = req.headers.id
   let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + id
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
-  let studentSearch = `${query.courseId ? 'sc.courseId = ' + query.courseId + ' AND' : ''} ma.fileName like '${query.fileName || ''}%'
+  let studentSearch = `${courseId ? 'sc.courseId = \'' + courseId + '\'' + ' AND' : ''} ma.fileName like '${query.fileName || ''}%'
     AND co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' ${sql_score}`
   let search = level !== 'students' ? studentSearch + ` AND st.name like '${query.studentName || ''}%'
-    ${query.studentId ? 'AND st.id = ' + query.studentId : ''}` : studentSearch
+    ${studentId ? 'AND st.id = \'' + studentId + '\'' : ''}` : studentSearch
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} st.name studentName,st.id studentId,co.name courseName,sc.courseId,
        ma.fileName,ma.size,ma.url,sc.score,te.name teacherName,co.teacherId,ma.id materialId,
@@ -492,7 +501,7 @@ router.post(commonInterfaces.deleteScoreDetail, function (req, res) {
   if (!accessControl(req, res, access.OVER_TEACHERS)) return
   let body = req.body
   let headers = req.headers
-  let level = headers['x-level']
+  let level = headers['level']
   let url = ''
   if (!checkParams(res, [paramsConfig.materialId], body, 4086)) return
   if (level !== 'teachers' && level !== 'admins') return res.json({message: '您无权删除！', status: 4089})
@@ -527,15 +536,15 @@ router.get(commonInterfaces.getQrPic, function (req, res) {
   if (!accessControl(req, res, access.OVER_STUDENTS)) return
   let headers = req.headers
   let query = req.query
-  console.log('get-->qrExportScore:获取二维码 name', decodeURIComponent(headers.name), 'level', headers['x-level'], 'id', headers.id)
+  console.log('get-->qrExportScore:获取二维码 name', decodeURIComponent(headers.name), 'level', headers['level'], 'id', headers.id)
   let params = ''
   for (let k in query) {
     if ((query[k] || query[k] === 0) && k !== 'token' && k !== 'level' && k !== 'id' && k !== 'name') {
       params += `&${k}=${encodeURIComponent(query[k])}`
     }
   }
-  let token = getJwt({}, headers['x-level'] + headers.id + headers.name, 600)
-  let url = `http://${ip}:3000/api/qr/exportScore?authorization=${token}&level=${headers['x-level']}&id=${headers.id}&name=${headers.name}${params}`
+  let token = getJwt({}, headers['level'] + headers.id + headers.name, 600)
+  let url = `http://${ip}:3000/api/qr/exportScore?authorization=${token}&level=${headers['level']}&id=${headers.id}&name=${headers.name}${params}`
   let img = qrImg.image(url, {size: 10, ec_level: 'H'}) // 容错30%
   res.writeHead(200, {'Content-Type': 'image/png'})
   res.token = token

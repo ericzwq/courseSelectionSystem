@@ -59,12 +59,12 @@
         <template slot="tableHead">
           <el-table-column type="index" :index="computeIndex" label="序号" width="60"
                            show-overflow-tooltip></el-table-column>
-          <el-table-column label="文件名称" width="100">
+          <el-table-column label="文件名称" width="100" show-overflow-tooltip>
             <template slot-scope="scope">
               <file-detail :file="scope.row"/>
             </template>
           </el-table-column>
-          <el-table-column prop="size" label="文件大小"></el-table-column>
+          <el-table-column prop="size" label="文件大小" show-overflow-tooltip></el-table-column>
           <el-table-column prop="studentName" label="学生名" v-if="level !== 'students'"
                            show-overflow-tooltip></el-table-column>
           <el-table-column prop="studentId" label="学号" v-if="level !== 'students'"

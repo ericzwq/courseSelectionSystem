@@ -47,12 +47,28 @@
           </el-table-column>
         </template>
       </my-table>
+      <el-dialog class="init-dialog" title="添加成绩详情" width="450px" :close-on-click-modal="false"
+                 :visible.sync="dialogVisible" @close="handleClose">
+        <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+          <el-form-item label="课程名称" prop="courseName">
+            <el-input v-model="ruleForm.courseName"></el-input>
+          </el-form-item>
+          <el-form-item label="教室" prop="classroom">
+            <el-input v-model="ruleForm.classroom"></el-input>
+          </el-form-item>
+          <el-form-item label="人数上限" prop="maxCount">
+            <el-input v-model="ruleForm.maxCount"></el-input>
+          </el-form-item>
+          <div style="text-align: right">
+            <el-button type="default" size="small" @click="handleClose">取消</el-button>
+            <el-button type="primary" size="small" @click="handleSave">确定</el-button>
+          </div>
+        </el-form>
+      </el-dialog>
     </template>
   </my-layout>
 </template>
 <script>
-  import updateCourses from "./updateCoursesBox.vue";
-
   export default {
     name: 'addedCourses',
     data() {
@@ -63,13 +79,45 @@
           classroom: '',
           selectedCount: ''
         },
-        ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),
         tableData: [],
         totalCount: 0,
         page: 1,
         count: 10,
         tableObj: {},
-        formCollapse: false
+        formCollapse: false,
+        dialogVisible: false,
+        ruleForm: {
+          courseName: '',
+          classroom: '',
+          maxCount: '',
+          courseId: ''
+        },
+        rules: {
+          courseName: [
+            {required: true, message: '请输入课程名称', trigger: 'blur'},
+            {min: 1, max: 10, message: '长度在 1到 10 个字符', trigger: 'blur'},
+          ],
+          classroom: [
+            {required: true, message: '请输入教室', trigger: 'blur'},
+            {min: 1, max: 10, message: '长度在 1 到 10 个字符', trigger: 'blur'}
+          ],
+          maxCount: [
+            {required: true, message: '请输入人数上限', trigger: 'blur'},
+            {
+              validator: (r, v, cb) => {
+                if (!/^[1-9]\d{0,2}$/.test(v)) return cb(new Error('请输入3位及3位以下正整数'))
+                cb()
+                // if (!/^\d+$/.test(v)) {
+                //   cb(new Error('请输入正整数'))
+                // } else if (v > 999 || v < 0) {
+                //   cb(new Error('请输入1-3位的数字'))
+                // } else {
+                //   cb()
+                // }
+              }, trigger: 'blur'
+            }
+          ]
+        }
       }
     },
     mounted() {
@@ -81,49 +129,33 @@
         this.count = count
         this.getTableData.call(this, '/teachers/addedCourses', this.searchForm)
       },
-      updateCourse(row) {
-        const h = this.$createElement;
-        this.$msgbox({
-          title: '消息',
-          message: h(updateCourses, {
-            ref: this.ruleFormIndex,
-            props: {courseName: row.courseName, classroom: row.classroom, maxCount: row.maxCount}
-          }),
-          showCancelButton: true,
-          showConfirmButton: true,
-          beforeClose: (action, instance, done) => {
-            let ruleForm = this.$refs[this.ruleFormIndex]
-            let form = ruleForm.ruleForm
-            let formData
-            if (action === 'confirm') {
-              if (ruleForm.submitForm('ruleForm')) {
-                instance.confirmButtonLoading = true;
-                instance.confirmButtonText = '修改中...';
-                formData = ruleForm.$data.ruleForm
-                this.axios.post('/teachers/updateCourse', {
-                  courseName: formData.courseName,
-                  classroom: formData.classroom,
-                  maxCount: formData.maxCount,
-                  courseId: row.courseId,
-                }).then(r => {
-                  let data = r.data
-                  done();
-                  instance.confirmButtonLoading = false;
-                  if (data.status === 0) {
-                    this.$message.success(data.message)
-                    this.tableObj.refresh()
-                  }
-                  // for (let k in form) {
-                  //   form[k] = ''
-                  // }
-                })
+      handleSave(){
+        this.$refs['ruleForm'].validate(valid=>{
+          if (valid) {
+            this.axios.post('/teachers/updateCourse', {
+              ...this.ruleForm
+            }).then(r => {
+              let data = r.data
+              if (data.status === 0) {
+                this.$message.success(data.message)
+                this.tableObj.refresh()
               }
-            } else {
-              done();
-              ruleForm.resetForm('ruleForm')
-            }
-          },
+              this.dialogVisible = false
+            })
+          }
         })
+      },
+      handleClose(){
+        this.dialogVisible = false
+        this.$refs['ruleForm'].clearValidate()
+      },
+      updateCourse(row) {
+        let ruleForm = this.ruleForm
+        ruleForm.courseName = row.courseName
+        ruleForm.classroom = row.classroom
+        ruleForm.maxCount = row.maxCount
+        ruleForm.courseId = row.courseId
+        this.dialogVisible = true
       },
       computeIndex(index) {
         return (this.page - 1) * this.count + index + 1
@@ -134,6 +166,19 @@
       },
       search() {
         this.tableObj.search()
+      },
+      submitForm(formName) {
+        let res
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            res = true
+          } else {
+            console.log('error submit!!');
+            res = false
+            return false;
+          }
+        });
+        return res
       }
     },
   }

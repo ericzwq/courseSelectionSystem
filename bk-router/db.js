@@ -1,7 +1,6 @@
 let mysql = require('mysql')
 let pool = mysql.createPool({
   host: 'localhost',
-  // host: 'www.cheesestudio.cn',
   user: 'root',
   // user: 'zwq',
   password: 'hellowq',
@@ -22,7 +21,7 @@ exports.querySql = function (callback) {
   })
 }
 exports.totalRows = 'SQL_CALC_FOUND_ROWS'
-exports.selectTotal = 'SELECT FOUND_ROWS() as totalCount'
+exports.selectTotal = 'SELECT FOUND_ROWS() as totalCount;'
 exports.paramsConfig = {
   courseName: {k: 'courseName', max: 10, type: 'string'},
   classroom: {k: 'classroom', max: 10, type: 'string'},
@@ -34,21 +33,27 @@ exports.paramsConfig = {
   teacherName: {k: 'teacherName', max: 10, type: 'string'},
   // phone: {k: 'phone', fixed: 11},
   studentName: {k: 'studentName', max: 10, type: 'string'},
-  // id: {k: 'id'},
+  id: {k: 'id'},
   level: {k: 'level', type: 'string'},
-  username: {k: 'username', type: 'string', max: 18},
+  // username: {k: 'username', type: 'string', max: 18},
   password: {k: 'password', type: 'string', max: 18, min: 6},
   newPsw: {k: 'newPsw', type: 'string', max: 18, min: 6},
   oldPsw: {k: 'oldPsw', type: 'string', max: 18, min: 6},
   invitation: {k: 'invitation', type: 'string', max: 54, min: 3},
-  name: {k: 'name', type: 'string', max: 18},
+  name: {k: 'name', type: 'string', max: 10},
   scoreIds: {k: 'scoreIds', type: 'array'},
   scoreId: {k: 'scoreId'},
   sex: {k: 'sex', type: 'string', max: 1},
   materialId: {k: 'materialId'},
   email: {k: 'email', type: 'email', max: 18},
   isRegister: {k: 'isRegister', type: 'enum', enum: ['0', '1']},
-  classTime: {k: 'classTime', type: 'date',}
+  classTime: {k: 'classTime', type: 'date'},
+  verificationCode: {
+    k: 'verificationCode', validator: (v) => {
+      if (v.length !== 6) return {valid: false, m: '长度为6位'}
+      return {valid: true}
+    }
+  }
 }
 exports.upScoreDetailsDir = './bk-assets/upload/scoreDetails'
 
@@ -178,7 +183,7 @@ let adminsPrefix = '/api/admins/'
 */
 let commonInterfaces = {
   login: '/api/public/login', // 登录
-  register: '/api/code/register', // 注册
+  bindInfo: '/api/code/bindInfo', // 注册
   verificationCode: '/api/public/verificationCode', // 注册获取邮箱验证码
   authVerificationCode: '/api/public/authVerificationCode', // 找回密码获取邮箱验证码(需认证用户名)
   findPsw: '/api/authCode/findPsw', // 找回密码(需认证用户名的验证码)
