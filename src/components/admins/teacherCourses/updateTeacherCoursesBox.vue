@@ -9,7 +9,7 @@
     <el-form-item label="人数上限" prop="maxCount">
       <el-input v-model="ruleForm.maxCount"></el-input>
     </el-form-item>
-    <el-form-item label="开课时间" prop="classTime">
+    <el-form-item label="开课日期" prop="classTime">
       <el-date-picker
           v-model="ruleForm.classTime"
           type="date"
@@ -61,7 +61,7 @@
             }
           ],
           classTime: [
-            {required: true, message: '请选择开课时间', trigger: 'blur'}
+            {required: true, message: '请选择开课日期', trigger: 'blur'}
           ]
         },
         pickerOptions: {

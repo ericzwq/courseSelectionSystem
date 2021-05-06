@@ -28,8 +28,8 @@ app.use((req, res, next) => {
   let method = req.method
   let params = method === 'GET' ? req.query : req.body
   let now = new Date()
-  let time = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate() + ' ' + (now.getUTCHours() + 8) + ':' + now.getMinutes() + ':' + now.getSeconds() + '==>'
-  let head = method + '---->' + time + pathname
+  let time = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate() + ' ' + (now.getUTCHours() + 8) + ':' + now.getMinutes() + ':' + now.getSeconds() + ' ==> '
+  let head = method + ' ----> ' + time + pathname
   for (let k in params) {
     head = head + '|' + k + ': ' + params[k]
   }

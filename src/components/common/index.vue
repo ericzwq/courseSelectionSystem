@@ -26,6 +26,41 @@
         <el-input placeholder="请输入教师号" clearable v-model.trim="searchForm.teacherId"
                   @keydown.enter.native="getChartData"></el-input>
       </el-form-item>
+      <el-form-item label="创建日期" prop="date">
+        <el-date-picker
+            clearable
+            v-model="date"
+            @change="dateChange"
+            value-format="yyyy-MM-dd"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期">
+        </el-date-picker>
+      </el-form-item>
+      <el-form-item class="form_btn">
+        <el-button type="default" @click="getChartData">查询</el-button>
+        <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
+        <el-button type="text" @click="formCollapse=!formCollapse">
+          {{ formCollapse ? '查看更多' : '收起' }}
+          <i :class="[formCollapse ? 'el-icon-caret-bottom' : 'el-icon-caret-top']"></i>
+        </el-button>
+      </el-form-item>
+    </el-form>
+    <el-form slot="form" :inline="true" size="mini" ref="searchForm" :model="searchForm" class="search_form"
+             v-else>
+      <el-form-item label="创建日期" prop="date">
+        <el-date-picker
+            clearable
+            v-model="date"
+            @change="dateChange"
+            value-format="yyyy-MM-dd"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期">
+        </el-date-picker>
+      </el-form-item>
       <el-form-item class="form_btn">
         <el-button type="default" @click="getChartData">查询</el-button>
         <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
@@ -56,8 +91,11 @@ export default {
         courseName: '',
         courseId: '',
         teacherName: '',
-        teacherId: ''
+        teacherId: '',
+        createdAtStart: '',
+        createdAtEnd: ''
       },
+      date: [],
       pieChart: null,
       barChart: null,
       chartData: {},
@@ -211,9 +249,20 @@ export default {
       this.pieChart.setOption({series: [{data: this.formatChartData('pie')}]})
       this.barChart.setOption({series: [{data: this.formatChartData('bar')}]})
     },
+    dateChange(date) {
+      if (date && date.length) {
+        this.searchForm.createdAtStart = date[0]
+        this.searchForm.createdAtEnd = date[1]
+      } else {
+        this.searchForm.createdAtStart = ''
+        this.searchForm.createdAtEnd = ''
+      }
+    },
     // 重置
     resetForm(formName) {
       this.$refs[formName].resetFields()
+      this.date = []
+      this.dateChange()
     },
     formatChartData(type) {
       let data = []
@@ -229,7 +278,7 @@ export default {
           data = data.concat({value, name: chartDataNames[i]})
         }
       }
-      if (sum === 0) {
+      if (sum === 0 && type === 'bar') { // 数据相同，只触发一次
         data = []
         this.$message.warning('无数据')
       }

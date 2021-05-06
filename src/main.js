@@ -86,6 +86,8 @@ Vue.prototype.getTableData = function (url, params, callback) {
   if (!params) params = {}
   this.axios.get(url, {params: {...params, page: this.page, count: this.count}}).then(r => {
     if (!r || !r.data || !r.data.data) {
+      this.tableData = []
+      return this.totalCount = 0
       // return this.loaded && this.loaded.close()
       // return this.$message.error('系统繁忙，请刷新页面')
     }
@@ -95,13 +97,12 @@ Vue.prototype.getTableData = function (url, params, callback) {
     }
     let data = r.data.data
     callback && callback(data)
-    // this.tableData.push(...data[0])
     this.tableData = data[0]
     this.totalCount = data[1].totalCount
     if (data[2] && data[2].selectedCourseIds) this.selectedCourseIds = data[2].selectedCourseIds
     // this.loaded.close()
     return data
-  }, /*() => this.loaded && this.loaded.close()*/)
+  })
 }
 
 Vue.config.productionTip = false

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<script>
+  function getSql(data) {
+    let {select, where, join, limit} = data
+    // select co.name as courseName,st.name as studentName from courses co inner join students st on st.id = co.studentId where st.name like '%';
+    let sql = `select ${select.data} from ${select.table};`
+    return sql
+  }
+
+  let data = {
+    select: {table: 'courses co', data: ['id', 'name']},
+    where: [{col: 'id'}],
+    join: {table: 'students st', on: 'st.id = co.studentId'},
+    limit: []
+  }
+  console.log(getSql(data))
+</script>
+</body>
+</html>

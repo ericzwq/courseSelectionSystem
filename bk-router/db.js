@@ -10,8 +10,11 @@ let pool = mysql.createPool({
   timezone: "08:00"
 })
 exports.getLimitStr = function (query) {
-  if (!query.page || !query.count) throw Error('参数错误')
-  return `LIMIT ${(query.page - 1) * query.count},${query.count}`
+  // if (!query.page || !query.count) throw Error('参数错误')
+  let {page, count} = query
+  if (!page) page = 1
+  if (!count) count = 100
+  return `LIMIT ${(page - 1) * count},${count}`
 }
 exports.querySql = function (callback) {
   pool.getConnection(function (err, connection) {

@@ -26,9 +26,11 @@ let teacherRouter = express.Router()
 teacherRouter.get(teachersInterfaces.getAllCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
-  let {courseId} = query
-  let search = `co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' AND
-    co.classroom like '${query.classroom || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''}`
+  let {courseId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
+  let search = `co.name LIKE '${query.courseName || ''}%' AND te.name LIKE '${query.teacherName || ''}%' AND
+    co.classroom LIKE '${query.classroom || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''} ${createdAtStart && createdAtEnd ?
+    `AND co.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} co.name courseName,co.id courseId,te.id teacherId,te.name teacherName,co.classroom,co.maxCount,co.classTime,
         co.selectedCount,co.createdBy,co.updatedBy,co.createdAt,co.updatedAt
@@ -68,11 +70,13 @@ teacherRouter.post(teachersInterfaces.addCourse, function (req, res) {
 teacherRouter.get(teachersInterfaces.getStuScores, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
-  let {studentId} = query
+  let {studentId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
   let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + req.headers.id
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let search = `st.name like '${query.studentName || ''}%' AND co.name like '${query.courseName || ''}%'
-    AND te.name like '${query.teacherName || ''}%' ${sql_score}`
+    AND te.name like '${query.teacherName || ''}%' ${sql_score} ${createdAtStart && createdAtEnd ?
+    `AND sc.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
     // select /*+ QB_NAME(QB1) JOIN_PREFIX(`courses`@QB1) */ * from   scores join courses on courses.id = scores.courseId;
     // select * from scores FORCE INDEX(`primary`) join courses IGNORE INDEX(`primary`) on courses.id = scores.courseId;
@@ -206,15 +210,19 @@ teacherRouter.post(teachersInterfaces.upScoreFile, function (req, res) {
                 fs.unlink(file.path, () => console.log('删除导入成绩文件'))
                 return res.json({message: '导入失败，请勿导入已有成绩的学生或表格数据不符要求', status: 4075})
               }
-              let sql_update = '(CASE '
+              let sql_update = '(CASE ',
+                sql_where = 'WHERE '
               data.forEach(i => {
-                sql_update = sql_update + `WHEN score = -1 AND studentId = ${i[1]} AND courseId = ${i[3]} THEN ${i[4]} `
+                let _where = `studentId = ${i[1]} AND courseId = ${i[3]}`
+                sql_update += `WHEN score = -1 AND ${_where} THEN ${i[4]} `
+                sql_where += `(${_where}) OR `
               })
+              sql_where = sql_where.slice(0, -3)
               sql_update += 'ELSE score END)'
-              connection.query(`UPDATE scores SET score = ${sql_update},updatedBy = '${decodeURIComponent(headers.name)}'`,
+              connection.query(`UPDATE scores SET score = ${sql_update},updatedBy = '${decodeURIComponent(headers.name)}' ${sql_where};`,
                 function (error3, results3) {
                   if (error3) throw error3
-                  // console.log(results3)
+                  console.log(results3)
                   if (results3.changedRows > 0) {
                     res.json({message: '导入成功', status: 0})
                   } else {
@@ -296,9 +304,11 @@ teacherRouter.post(teachersInterfaces.addScoreDetail, function (req, res) {
 teacherRouter.get(teachersInterfaces.getAddedCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
-  let {courseId} = query
-  let search = `name like '${query.courseName || ''}%' ${courseId ? 'AND id = \'' + courseId + '\'' : ''} AND classroom like '${query.classroom || ''}%' 
-    AND selectedCount like '${query.selectedCount || ''}%'`
+  let {courseId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
+  let search = `name like '${query.courseName || ''}%' ${courseId ? 'AND id = \'' + courseId + '\'' : ''} AND classroom like '${query.classroom || ''}%'
+    AND selectedCount like '${query.selectedCount || ''}%' ${createdAtStart && createdAtEnd ?
+    `AND createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} name courseName,classroom,selectedCount,id courseId,maxCount,classTime,createdBy,
         updatedBy,createdAt,updatedAt

@@ -24,9 +24,10 @@ let studentRouter = express.Router()
 studentRouter.get(studentsInterfaces.getGradeDistributions, function (req, res) {
   if (!accessControl(req, res, access.ONLY_STUDENTS)) return
   querySql(function (connection) {
-    let sql = ''
+    let sql = '', {createdAtStart, createdAtEnd} = req.query
     for (let i = 0, len = scoreLevel.length; i < len; i++) {
-      sql += `SELECT count(1) level${i} FROM scores WHERE ${scoreLevel[i]} AND studentId = ${req.headers.id};`
+      sql += `SELECT count(1) level${i} FROM scores WHERE ${scoreLevel[i]} AND studentId = ${req.headers.id} ${createdAtStart && createdAtEnd ?
+        `AND createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''};`
     }
     connection.query(sql, function (error, results) {
       if (error) return res.json({message: '查询数据失败', status: 5022})
@@ -38,9 +39,12 @@ studentRouter.get(studentsInterfaces.getGradeDistributions, function (req, res) 
 studentRouter.get(studentsInterfaces.selectScores, function (req, res) {
   if (!accessControl(req, res, access.ONLY_STUDENTS)) return
   let query = filterQuery(req.query)
+  let {createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
   let id = req.headers.id
+  let search = `${createdAtStart && createdAtEnd ?
+    `AND createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''}`
   querySql(function (connection) {
-    connection.query(`SELECT courseId FROM scores WHERE studentId = ${id}`, function (error, results) {
+    connection.query(`SELECT courseId FROM scores WHERE studentId = ${id} ${search}`, function (error, results) {
       if (error) return res.json({message: '查询数据失败', status: 4083})
       if (results.flat(Infinity).length === 0) return res.json({
         message: '暂无数据',
@@ -53,7 +57,8 @@ studentRouter.get(studentsInterfaces.selectScores, function (req, res) {
       })
       if (!courseIds) return res.json({message: '暂无数据', status: 0, data: [[], {totalCount: 0}]})
       let sql_score = getScoreSqlByScoreCode(query.scoreCode)
-      let search = `co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' ${sql_score}`
+      let search = `co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' ${sql_score} ${classTimeStart && classTimeEnd ?
+        `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
       connection.query(`SELECT ${totalRows} co.name courseName,te.name teacherName,te.id teacherId,sc.score,co.id courseId,sc.id scoreId,co.classTime,
         sc.updatedBy,sc.createdAt,sc.updatedAt
         FROM courses co, teachers te, scores sc WHERE co.id in (${courseIds}) AND
@@ -71,17 +76,20 @@ studentRouter.get(studentsInterfaces.selectScores, function (req, res) {
 studentRouter.post(studentsInterfaces.exportScores, function (req, res) {
   if (!accessControl(req, res, access.ONLY_STUDENTS)) return
   let body = filterQuery(req.body)
-  let scoreIds = body.scoreIds
+  let {scoreIds, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = body
   let sql_score_id = ''
-  if (!Array.isArray(scoreIds)) return res.json({message: '参数scoreIds须为数组', status: 4066})
   let scoreConf
   if (!(body.all && body.all === 1)) {
+    if (!scoreIds) return res.json({message: '参数scoreIds缺失', status: 5033})
+    if (!Array.isArray(scoreIds)) return res.json({message: '参数scoreIds须为数组', status: 4066})
     sql_score_id = `AND sc.id in (${scoreIds.join(',') || 0})`
     scoreConf = paramsConfig.scoreIds
   }
   if (!checkParams(res, [scoreConf], body, 4098)) return
   let sql_score = getScoreSqlByScoreCode(body.scoreCode)
-  let search = `co.name like '${body.courseName || ''}%' AND te.name like '${body.teacherName || ''}%' ${sql_score}`
+  let search = `co.name like '${body.courseName || ''}%' AND te.name like '${body.teacherName || ''}%' ${sql_score} ${createdAtStart && createdAtEnd ?
+    `AND sc.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT co.name courseName,co.id courseId,te.name teacherName,te.id teacherId,sc.score,co.classTime,
         sc.updatedBy,sc.createdAt,sc.updatedAt
@@ -131,10 +139,12 @@ studentRouter.post(studentsInterfaces.unselectCourse, function (req, res) {
 studentRouter.get(studentsInterfaces.selectAllCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_STUDENTS)) return
   let query = filterQuery(req.query)
-  let {courseId, maxCount} = query
+  let {courseId, maxCount, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
   let search = `co.name like '${query.courseName || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''}
     AND te.name like '${query.teacherName || ''}%' AND co.classroom like '${query.classroom}%'
-    AND selectedCount like '${query.selectedCount || ''}%' ${maxCount ? 'AND co.maxCount = \'' + maxCount + '\'' : ''}`
+    AND selectedCount like '${query.selectedCount || ''}%' ${maxCount ? 'AND co.maxCount = \'' + maxCount + '\'' : ''} ${createdAtStart && createdAtEnd ?
+    `AND co.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} co.id courseId,co.name courseName,te.name teacherName,te.id teacherId,co.classroom,co.selectedCount,co.maxCount,co.classTime,
         co.updatedBy,co.createdAt,co.updatedAt

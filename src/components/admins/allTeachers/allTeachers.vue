@@ -25,6 +25,18 @@
           </el-option>
         </el-select>
       </el-form-item>
+      <el-form-item label="创建日期" prop="date">
+        <el-date-picker
+            clearable
+            v-model="date"
+            @change="dateChange"
+            value-format="yyyy-MM-dd"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期">
+        </el-date-picker>
+      </el-form-item>
       <el-form-item class="form_btn">
         <el-button type="default" @click="search">查询</el-button>
         <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
@@ -75,8 +87,11 @@ export default {
         teacherId: '',
         phone: '',
         email: '',
-        status: ''
+        status: '',
+        createdAtStart:'',
+        createdAtEnd:''
       },
+      date:[],
       ruleFormIndex: 'ruleForm' + Math.ceil(Math.random() * 100),
       tableData: [],
       totalCount: 0,
@@ -124,12 +139,23 @@ export default {
         })
       })
     },
+    dateChange(date) {
+      if (date && date.length) {
+        this.searchForm.createdAtStart = date[0]
+        this.searchForm.createdAtEnd = date[1]
+      } else {
+        this.searchForm.createdAtStart = ''
+        this.searchForm.createdAtEnd = ''
+      }
+    },
     computeIndex(index) {
       return (this.page - 1) * this.count + index + 1
     },
     // 重置
     resetForm(formName) {
       this.$refs[formName].resetFields()
+      this.date = []
+      this.dateChange()
     },
     search() {
       this.tableObj.search()

@@ -6,11 +6,14 @@ let adminRouter = express.Router()
 adminRouter.get(adminsInterfaces.getTeacherCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
-  let {courseId} = query
+  let {courseId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
   let search = `co.name like '${query.courseName || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''}
-    AND te.name like '${query.teacherName || ''}%' AND classroom like '${query.classroom || ''}%'`
+    AND te.name like '${query.teacherName || ''}%' AND classroom like '${query.classroom || ''}%' ${createdAtStart && createdAtEnd ?
+    `AND co.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
-    connection.query(`SELECT ${totalRows} co.id courseId,co.name courseName,te.name teacherName,co.classroom,co.selectedCount,
+    connection.query(`SELECT ${totalRows} co.id courseId,co.name courseName,
+        te.name teacherName,co.classroom,co.selectedCount,
         co.maxCount,co.classTime,te.id teacherId,co.updatedBy,co.createdAt,co.updatedAt
         FROM courses co INNER JOIN teachers te ON co.teacherId=te.id AND ${search}
         ORDER BY co.updatedAt DESC ${getLimitStr(query)};${selectTotal}`,
@@ -28,14 +31,10 @@ adminRouter.post(adminsInterfaces.updateCourse, function (req, res) {
   if (!checkParams(res, [paramsConfig.courseName, paramsConfig.classroom, paramsConfig.courseId, paramsConfig.classTime,
     paramsConfig.maxCount], body, 4034)) return
   querySql(function (connection) {
-    connection.query(`UPDATE courses
-                      SET courses.name = ?,
-                          classroom    = ?,
-                          maxCount     = ?,
-                          classTime    = ?,
-                          updatedBy    = ?
-                      WHERE courses.id = ?`,
-      [body.courseName, body.classroom, body.maxCount, body.classTime, decodeURIComponent(req.headers.name), body.courseId],
+    connection.query(`UPDATE courses SET courses.name = ?,classroom    = ?,
+        maxCount     = ?,classTime    = ?,updatedBy    = ? WHERE courses.id = ?`,
+      [body.courseName, body.classroom, body.maxCount, body.classTime,
+        decodeURIComponent(req.headers.name), body.courseId],
       function (error, results) {
         if (results && results.affectedRows > 0) {
           res.json({message: '修改成功', status: 0})
@@ -49,10 +48,12 @@ adminRouter.post(adminsInterfaces.updateCourse, function (req, res) {
 adminRouter.get(adminsInterfaces.getAllScores, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
-  let {studentId} = query
+  let {studentId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let search = `st.name like '${query.studentName || ''}%' AND co.name like '${query.courseName || ''}%'
-    AND te.name like '${query.teacherName || ''}%' ${sql_score}`
+    AND te.name like '${query.teacherName || ''}%' ${sql_score} ${createdAtStart && createdAtEnd ?
+    `AND sc.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} st.name studentName,sc.studentId,sc.score,co.name courseName,sc.courseId,
     co.teacherId,te.name teacherName,sc.id scoreId,co.classTime,sc.updatedBy,sc.createdAt,sc.updatedAt
@@ -99,10 +100,11 @@ adminRouter.post(adminsInterfaces.updateScore, function (req, res) {
 adminRouter.get(adminsInterfaces.getAllTeachers, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
-  let {phone, teacherId, email, status} = query
+  let {phone, teacherId, email, status, createdAtStart, createdAtEnd} = query
   let search = `name like '${query.teacherName || ''}%'
     ${teacherId ? 'AND id = \'' + teacherId + '\'' : ''} ${phone ? 'AND phone = \'' + phone + '\'' : ''}
-    ${email ? 'AND email like \'' + email + '%\'' : ''} ${status ? 'AND status = ' + status : ''}`
+    ${email ? 'AND email like \'' + email + '%\'' : ''} ${status ? 'AND status = ' + status : ''} ${createdAtStart && createdAtEnd ?
+    `AND createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} id teacherId,name teacherName,phone,email,sex,status,createdAt,updatedAt,status
     FROM teachers WHERE ${search} ${getLimitStr(query)};${selectTotal}`, // ORDER BY updatedAt DESC
@@ -138,10 +140,11 @@ adminRouter.post(adminsInterfaces.updateTeacherStatus, function (req, res) {
 adminRouter.get(adminsInterfaces.getAllStudents, function (req, res) {
   if (!accessControl(req, res, access.ONLY_ADMINS)) return
   let query = filterQuery(req.query)
-  let {phone, studentId, email, status, studentName} = query
-  let search = `name like '${query.studentName || ''}%'
+  let {phone, studentId, email, status, studentName, createdAtStart, createdAtEnd} = query
+  let search = `name like '${studentName || ''}%'
     ${studentId ? 'AND id = \'' + studentId + '\'' : ''} ${phone ? 'AND phone = \'' + phone + '\'' : ''}
-    ${email ? 'AND email like \'' + email + '%\'' : ''} ${status ? 'AND status = ' + status : ''}`
+    ${email ? 'AND email like \'' + email + '%\'' : ''} ${status ? 'AND status = ' + status : ''} ${createdAtStart && createdAtEnd ?
+    `AND createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} id studentId,name studentName,phone,email,sex,status,createdAt,updatedAt,status
         FROM students WHERE ${search}

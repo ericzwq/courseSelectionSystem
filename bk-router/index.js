@@ -227,7 +227,7 @@ router.post(commonInterfaces.login, function (req, res) {
   querySql(function (connection) {
     connection.query(`SELECT password,id,phone,email,name,status,sex FROM ${level} WHERE id = '${body.id}' LIMIT 1;`,
       function (error, results) {
-        if (error) throw error
+        if (error) return res.json({message: '查询数据失败', status: 5035})
         if (results.length === 0) return res.json({message: '用户不存在', status: 4057})
         let sqlData = results[0]
         let password = sqlData.password
@@ -379,7 +379,7 @@ router.post(commonInterfaces.findPsw, function (req, res) {
             })
           }
         })
-      })
+      })/*  */
   })
 })
 /*修改密码*/
@@ -395,7 +395,8 @@ router.post(commonInterfaces.updatePsw, function (req, res) {
       if (error) return res.json({message: '修改失败', status: 4065})
       if (results.length === 0) return res.json({message: '身份错误', status: 4000})
       if (results[0].password !== body.oldPsw) return res.json({message: '旧密码错误', status: 4001})
-      connection.query(`UPDATE ${level} SET password = ? WHERE id = ?`, [body.newPsw, parseInt(headers.id)], function (error2, results2) {
+      connection.query(`UPDATE ${level} SET password = ? WHERE id = ?`, [body.newPsw, parseInt(headers.id)],
+      function (error2, results2) {
         if (error2) throw error2
         if (results2.affectedRows > 0) {
           res.json({
@@ -414,7 +415,7 @@ router.get(commonInterfaces.getAllGradeDistributions, function (req, res) {
   let query = req.query
   querySql(function (connection) {
     let sql = ''
-    let {teacherName, studentId, studentName, courseName, teacherId, courseId} = query
+    let {teacherName, studentId, studentName, courseName, teacherId, courseId, createdAtStart, createdAtEnd} = query
     let innerStu = 'INNER JOIN students st ON st.id = sc.studentId'
     let innerCou = 'INNER JOIN courses co IGNORE INDEX(\`primary\`) ON co.id = sc.courseId'
     let innerTea = 'INNER JOIN teachers te ON te.id = co.teacherId'
@@ -422,7 +423,8 @@ router.get(commonInterfaces.getAllGradeDistributions, function (req, res) {
       sql += `SELECT count(1) level${i} FROM scores sc ${(studentId || studentName) ? innerStu : ''} ${(teacherName || courseName || teacherId) ? innerCou : ''} ${(teacherName ? innerTea : '')}
       WHERE ${scoreLevel[i]} ${studentId ? 'AND st.id = \'' + studentId + '\'' : ''} ${studentName ? 'AND st.name = \'' + studentName + '\'' : ''}
       ${courseName ? 'AND co.name = \'' + courseName + '\'' : ''} ${teacherName ? 'AND te.name = \'' + teacherName + '\'' : ''} ${teacherId ? 'AND co.teacherId = \'' + teacherId + '\'' : ''}
-      ${courseId ? 'AND sc.courseId = \'' + courseId + '\'' : ''};`
+      ${courseId ? 'AND sc.courseId = \'' + courseId + '\'' : ''} ${createdAtStart && createdAtEnd ?
+        `AND sc.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''};`
     }
     // console.log(sql)
     connection.query(sql, function (error, results) {
@@ -435,27 +437,32 @@ router.get(commonInterfaces.getAllGradeDistributions, function (req, res) {
 router.post(commonInterfaces.exportStudentScore, function (req, res) {
   if (!accessControl(req, res, access.OVER_TEACHERS)) return
   let body = filterQuery(req.body)
-  let scoreIds = body.scoreIds
+  let {scoreIds, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = body
   let limit = req.headers['level'] === 'admins' ? 100000 : 10000
   let sql_score_id = ''
-  if (!Array.isArray(scoreIds)) return res.json({message: '参数scoreIds须为数组', status: 4067})
   let scoreConf
   if (!(body.all && body.all === 1)) {
+    if (!scoreIds) return res.json({message: '参数scoreIds缺失', status: 5034})
+    if (!Array.isArray(scoreIds)) return res.json({message: '参数scoreIds须为数组', status: 4067})
     sql_score_id = `sc.id in (${scoreIds.join(',') || 0}) AND`
     scoreConf = paramsConfig.scoreIds
   }
   let sql_student = (!body.studentCategory || parseInt(body.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + req.headers.id
   let sql_score = getScoreSqlByScoreCode(body.scoreCode)
   let search = `st.name like '${body.studentName || ''}%' AND co.name like '${body.courseName || ''}%'
-    AND te.name like '${body.teacherName || ''}%' ${sql_score}`
+    AND te.name like '${body.teacherName || ''}%' ${sql_score} ${createdAtStart && createdAtEnd ?
+    `AND sc.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   if (!checkParams(res, [scoreConf], body, 4069)) return
   querySql(function (connection) {
-    connection.query(`SELECT ${totalRows} st.name studentName,sc.studentId,co.name courseName,co.id courseId,te.name teacherName,
+    connection.query(`SELECT ${totalRows} st.name studentName,sc.studentId,co.name courseName,
+    co.id courseId,te.name teacherName,
     te.id teacherId,sc.score,co.classTime,sc.updatedBy,sc.createdAt,sc.updatedAt
     FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id)
       INNER JOIN courses co IGNORE INDEX(\`primary\`) ON sc.courseId=co.id ${sql_student})
       INNER JOIN teachers te ON te.id = co.teacherId
-      WHERE ${sql_score_id} ${body.studentId ? 'st.id = ' + body.studentId : "st.id >= ''"} AND ${search}
+      WHERE ${sql_score_id} ${body.studentId ? 'st.id = ' + body.studentId : "st.id >= ''"}
+      AND ${search}
       LIMIT ${limit};`, function (error, results) {
       if (error) throw error
       let conf = {}
@@ -471,7 +478,7 @@ router.post(commonInterfaces.exportStudentScore, function (req, res) {
 router.get(commonInterfaces.getScoreDetails, function (req, res) {
   if (!accessControl(req, res, access.OVER_STUDENTS)) return
   let query = filterQuery(req.query)
-  let {courseId, studentId} = query
+  let {courseId, studentId, createdAtStart, createdAtEnd} = query
   let level = req.headers['level']
   let id = req.headers.id
   let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + id
@@ -480,6 +487,7 @@ router.get(commonInterfaces.getScoreDetails, function (req, res) {
     AND co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' ${sql_score}`
   let search = level !== 'students' ? studentSearch + ` AND st.name like '${query.studentName || ''}%'
     ${studentId ? 'AND st.id = \'' + studentId + '\'' : ''}` : studentSearch
+  search += `${createdAtStart && createdAtEnd ? `AND ma.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''}`
   querySql(function (connection) {
     connection.query(`SELECT ${totalRows} st.name studentName,st.id studentId,co.name courseName,sc.courseId,
        ma.fileName,ma.size,ma.url,sc.score,te.name teacherName,co.teacherId,ma.id materialId,
@@ -555,11 +563,14 @@ router.get(commonInterfaces.getQrPic, function (req, res) {
 router.get(commonInterfaces.qrExportScore, function (req, res) {
   // if (!accessControl(req, res, access.OVER_STUDENTS)) return
   let query = filterQuery(req.query)
+  let {createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
   let level = query.level
   let limit = level === 'admins' ? 100000 : 10000
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let search = `st.name like '${query.studentName || ''}%' AND co.name like '${query.courseName || ''}%'
-    AND te.name like '${query.teacherName || ''}%' ${sql_score}`
+    AND te.name like '${query.teacherName || ''}%' ${sql_score} ${createdAtStart && createdAtEnd ?
+    `AND sc.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   let sql_select = `${level === 'students' ? '' : 'st.name studentName,studentId,'}co.name courseName,co.id courseId,te.name teacherName,
     te.id AS teacherId,sc.score,co.classTime,sc.updatedBy,sc.createdAt,sc.updatedAt`
   let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + query.id

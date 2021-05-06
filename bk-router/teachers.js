@@ -26,14 +26,17 @@ let teacherRouter = express.Router()
 teacherRouter.get(teachersInterfaces.getAllCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
-  let {courseId} = query
-  let search = `co.name like '${query.courseName || ''}%' AND te.name like '${query.teacherName || ''}%' AND
-    co.classroom like '${query.classroom || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''}`
+  let {courseId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
+  let search = `co.name LIKE '${query.courseName || ''}%' AND te.name LIKE '${query.teacherName || ''}%' AND
+    co.classroom LIKE '${query.classroom || ''}%' ${courseId ? 'AND co.id = \'' + courseId + '\'' : ''} ${createdAtStart && createdAtEnd ?
+    `AND co.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
-    connection.query(`SELECT ${totalRows} co.name courseName,co.id courseId,te.id teacherId,te.name teacherName,co.classroom,co.maxCount,co.classTime,
+    connection.query(`SELECT ${totalRows} co.name courseName,co.id courseId,te.id teacherId,
+        te.name teacherName,co.classroom,co.maxCount,co.classTime,
         co.selectedCount,co.createdBy,co.updatedBy,co.createdAt,co.updatedAt
-        FROM courses co INNER JOIN teachers te WHERE co.teacherId = te.id AND ${search} ORDER BY co.updatedAt
-        DESC ${getLimitStr(query)};${selectTotal}`,
+        FROM courses co INNER JOIN teachers te WHERE co.teacherId = te.id AND ${search}
+        ORDER BY co.updatedAt DESC ${getLimitStr(query)};${selectTotal}`,
       function (error, results) {
         if (error) return res.json({message: '数据查询失败', status: 4021})
         results[1] = {totalCount: results[1][0].totalCount}
@@ -56,8 +59,10 @@ teacherRouter.post(teachersInterfaces.addCourse, function (req, res) {
   },
     paramsConfig.maxCount], body, 4052)) return
   querySql(function (connection) {
-    connection.query(`INSERT courses(name,teacherId,classroom,selectedCount,maxCount,classTime,createdBy) values(?,?,?,?,?,?,?);`,
-      [body.courseName, headers.id, body.classroom, 0, body.maxCount, body.classTime, decodeURIComponent(headers.name)],
+    connection.query(`INSERT courses(name,teacherId,classroom,selectedCount,
+      maxCount,classTime,createdBy) values(?,?,?,?,?,?,?);`,
+      [body.courseName, headers.id, body.classroom, 0, body.maxCount,
+        body.classTime, decodeURIComponent(headers.name)],
       function (error, results) {
         if (error) return res.json({message: '添加失败', status: 4023})
         res.json({message: '添加成功', status: 0})
@@ -68,16 +73,19 @@ teacherRouter.post(teachersInterfaces.addCourse, function (req, res) {
 teacherRouter.get(teachersInterfaces.getStuScores, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
-  let {studentId} = query
+  let {studentId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
   let sql_student = (!query.studentCategory || parseInt(query.studentCategory) !== 2) ? '' : 'AND co.teacherId = ' + req.headers.id
   let sql_score = getScoreSqlByScoreCode(query.scoreCode)
   let search = `st.name like '${query.studentName || ''}%' AND co.name like '${query.courseName || ''}%'
-    AND te.name like '${query.teacherName || ''}%' ${sql_score}`
+    AND te.name like '${query.teacherName || ''}%' ${sql_score} ${createdAtStart && createdAtEnd ?
+    `AND sc.createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND co.classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
     // select /*+ QB_NAME(QB1) JOIN_PREFIX(`courses`@QB1) */ * from   scores join courses on courses.id = scores.courseId;
     // select * from scores FORCE INDEX(`primary`) join courses IGNORE INDEX(`primary`) on courses.id = scores.courseId;
     // select SQL_CALC_FOUND_ROWS st.name studentName,sc.studentId,sc.score,co.name courseName,sc.courseId,co.teacherId,te.name teacherName,sc.id scoreId,sc.createdBy,sc.updatedBy,sc.createdAt,sc.updatedAt from scores sc join students st on st.id = sc.studentId join courses co ignore index(`primary`) on co.id = sc.courseId join teachers te on te.id = co.teacherId ORDER BY sc.updatedAt DESC;
-    let sql = `SELECT ${totalRows} sc.id scoreId,st.name studentName,sc.studentId,co.name courseName,co.id courseId,te.name teacherName,
+    let sql = `SELECT ${totalRows} sc.id scoreId,st.name studentName,sc.studentId,
+    co.name courseName,co.id courseId,te.name teacherName,
     te.id teacherId,sc.score,co.classTime,sc.updatedBy,sc.createdAt,sc.updatedAt
     FROM ((scores sc INNER JOIN students st ON sc.studentId = st.id)
       INNER JOIN courses co IGNORE INDEX(\`primary\`) ON sc.courseId=co.id ${sql_student})
@@ -206,15 +214,20 @@ teacherRouter.post(teachersInterfaces.upScoreFile, function (req, res) {
                 fs.unlink(file.path, () => console.log('删除导入成绩文件'))
                 return res.json({message: '导入失败，请勿导入已有成绩的学生或表格数据不符要求', status: 4075})
               }
-              let sql_update = '(CASE '
+              let sql_update = '(CASE ',
+                sql_where = 'WHERE '
               data.forEach(i => {
-                sql_update = sql_update + `WHEN score = -1 AND studentId = ${i[1]} AND courseId = ${i[3]} THEN ${i[4]} `
+                let _where = `studentId = ${i[1]} AND courseId = ${i[3]}`
+                sql_update += `WHEN score = -1 AND ${_where} THEN ${i[4]} `
+                sql_where += `(${_where}) OR `
               })
+              sql_where = sql_where.slice(0, -3)
               sql_update += 'ELSE score END)'
-              connection.query(`UPDATE scores SET score = ${sql_update},updatedBy = '${decodeURIComponent(headers.name)}'`,
+              connection.query(`UPDATE scores SET score = ${sql_update},updatedBy =
+              '${decodeURIComponent(headers.name)}' ${sql_where};`,
                 function (error3, results3) {
                   if (error3) throw error3
-                  // console.log(results3)
+                  console.log(results3)
                   if (results3.changedRows > 0) {
                     res.json({message: '导入成功', status: 0})
                   } else {
@@ -252,13 +265,16 @@ teacherRouter.post(teachersInterfaces.addScore, function (req, res) {
         connection.query(`SELECT classTime FROM courses WHERE id = ${courseId} AND teacherId = ${headers.id}`,
           function (error2, results2) {
             if (error2) throw error2
-            if (results2.length <= 0) return res.json({message: '该学生此课程非您所授，您无权提交分数', status: 4047})
+            if (results2.length <= 0) return res.json({message: '该学生此课程非您所授，您无权提交分数',
+            status: 4047})
             if (new Date(results2[0]['classTime']).getTime() > Date.now()) return res.json({
               message: '该课程未开课,无法添加成绩',
               status: 5017
             })
-            connection.query(`UPDATE scores SET score = ${body.score},updatedBy = '${decodeURIComponent(headers.name)}'
-            WHERE studentId = ${body.studentId} AND courseId = ${body.courseId}`, function (error3, results3) {
+            connection.query(`UPDATE scores SET score = ${body.score},updatedBy =
+            '${decodeURIComponent(headers.name)}'
+            WHERE studentId = ${body.studentId} AND courseId = ${body.courseId}`,
+            function (error3, results3) {
               if (error3) return res.json({message: '添加失败', status: 4025})
               res.json({message: '添加成功', status: 0})
             })
@@ -276,14 +292,17 @@ teacherRouter.post(teachersInterfaces.addScoreDetail, function (req, res) {
   form.uploadDir = upScoreDetailsDir
   form.maxFilesSize = 524288000 // 500 * 1024 * 1024
   querySql(function (connection) {
-    connection.query(`SELECT score FROM scores WHERE id = ${params.scoreId} AND score > -1`, function (error, result) {
+    connection.query(`SELECT score FROM scores WHERE id = ${params.scoreId} AND score > -1`,
+    function (error, result) {
       if (error) return res.json({message: '查询数据失败', status: 4079})
       if (result.length < 1) return res.json({message: '请先录入成绩', status: 4080})
       form.parse(req, function (err, fields, files) {
         if (err) return res.json({message: '上传文件失败', status: 4076})
         let file = files.file[0]
-        connection.query(`INSERT materials(fileName, url, size, scoreId,createdBy) VALUES (?,?,?,?,?)`,
-          [file.originalFilename, file.path, file.size, params.scoreId, decodeURIComponent(req.headers.name)],
+        connection.query(`INSERT materials(fileName, url, size, scoreId,createdBy)
+        VALUES (?,?,?,?,?)`,
+          [file.originalFilename, file.path, file.size, params.scoreId,
+            decodeURIComponent(req.headers.name)],
           function (error2, results2) {
             if (error2) return res.json({message: '上传文件失败', status: 4078})
             res.json({message: '上传文件成功', status: 0})
@@ -296,13 +315,17 @@ teacherRouter.post(teachersInterfaces.addScoreDetail, function (req, res) {
 teacherRouter.get(teachersInterfaces.getAddedCourses, function (req, res) {
   if (!accessControl(req, res, access.ONLY_TEACHERS)) return
   let query = filterQuery(req.query)
-  let {courseId} = query
-  let search = `name like '${query.courseName || ''}%' ${courseId ? 'AND id = \'' + courseId + '\'' : ''} AND classroom like '${query.classroom || ''}%' 
-    AND selectedCount like '${query.selectedCount || ''}%'`
+  let {courseId, createdAtStart, createdAtEnd, classTimeStart, classTimeEnd} = query
+  let search = `name like '${query.courseName || ''}%' ${courseId ? 'AND id = \'' + courseId + '\'' : ''} AND classroom like '${query.classroom || ''}%'
+    AND selectedCount like '${query.selectedCount || ''}%' ${createdAtStart && createdAtEnd ?
+    `AND createdAt BETWEEN '${createdAtStart}' AND '${createdAtEnd}'` : ''} ${classTimeStart && classTimeEnd ?
+    `AND classTime BETWEEN '${classTimeStart}' AND '${classTimeEnd}'` : ''}`
   querySql(function (connection) {
-    connection.query(`SELECT ${totalRows} name courseName,classroom,selectedCount,id courseId,maxCount,classTime,createdBy,
+    connection.query(`SELECT ${totalRows} name courseName,classroom,selectedCount,
+        id courseId,maxCount,classTime,createdBy,
         updatedBy,createdAt,updatedAt
-        FROM courses WHERE teacherId = ${req.headers.id} AND ${search} ORDER BY updatedAt DESC ${getLimitStr(query)};
+        FROM courses WHERE teacherId = ${req.headers.id} AND ${search} ORDER BY
+        updatedAt DESC ${getLimitStr(query)};
         ${selectTotal}`, function (error, results) {
       if (error) return res.json({message: '查询数据失败', status: 4026})
       results[1] = {totalCount: results[1][0].totalCount}

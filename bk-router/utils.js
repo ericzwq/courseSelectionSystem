@@ -119,3 +119,15 @@ exports.setExcelType = function (res) {
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8')
   res.setHeader("Content-Disposition", "attachment; filename=scores.xlsx")
 }
+
+// select id,name from courses co inner join students st on st.id = co.studentId where id = 1 limit 1;
+exports.getSql = function (data) {
+  data = {
+    select: {table: 'courses', data: ['id', 'name']},
+    where: [{col: 'id'}],
+    join: [],
+    limit: []
+  }
+  let {select, where, join, limit} = data
+  let sql = `select ${select.data} from ${select.table}`
+}

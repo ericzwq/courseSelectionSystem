@@ -37,6 +37,30 @@
           </el-option>
         </el-select>
       </el-form-item>
+      <el-form-item label="创建日期" prop="date">
+        <el-date-picker
+            clearable
+            v-model="date"
+            @change="dateChange"
+            value-format="yyyy-MM-dd"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期">
+        </el-date-picker>
+      </el-form-item>
+      <el-form-item label="开课日期" prop="date">
+        <el-date-picker
+            clearable
+            v-model="date2"
+            @change="dateChange2"
+            value-format="yyyy-MM-dd"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期">
+        </el-date-picker>
+      </el-form-item>
       <el-form-item class="form_btn">
         <el-button type="default" @click="search">查询</el-button>
         <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
@@ -116,7 +140,7 @@
               <span>{{ scope.row.score === -1 ? '暂无' : scope.row.score }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="classTime" label="开课时间" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="classTime" label="开课日期" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
           <el-table-column prop="createdAt" label="创建时间" show-overflow-tooltip></el-table-column>
           <el-table-column prop="updatedAt" label="修改时间" show-overflow-tooltip></el-table-column>
@@ -154,7 +178,11 @@ export default {
         courseName: '',
         teacherName: '',
         scoreCode: '',
-        studentCategory: 2
+        studentCategory: 2,
+        createdAtStart: '',
+        createdAtEnd: '',
+        classTimeStart: '',
+        classTimeEnd: ''
       },
       scoreOptions,
       studentCategoryOptions: [
@@ -162,6 +190,8 @@ export default {
         {name: '全部学生', value: 1},
         {name: '我的学生', value: 2},
       ],
+      date: [],
+      date2: [],
       tableData: [],
       totalCount: 0,
       page: 1,
@@ -227,7 +257,6 @@ export default {
       let scoreIds = []
       this.multipleSelection.forEach(i => scoreIds.push(i.scoreId))
       this.axios.post('/teachers/template', {scoreIds}, {responseType: 'blob'}).then(r => {
-        console.dir(r)
         if (r.headers['content-type'].toLowerCase().startsWith('application/json')) {
           return this.$message.error('获取文件失败')
         }
@@ -282,14 +311,8 @@ export default {
     exportScore(all) {
       let scoreIds = []
       if (!all) this.multipleSelection.forEach(i => scoreIds.push(i.scoreId))
-      // this.loading()
-      this.axios.post('/exportStudentScores', {
-        scoreIds,
-        all: all ? 1 : 0,
-        ...this.searchForm,
-        page: this.page,
-        count: this.count
-      }, {responseType: 'blob'}).then(r => {
+      let params = Object.assign({}, this.searchForm, {all: all ? 1 : 0, page: this.page, count: this.count,scoreIds})
+      this.axios.post('/exportStudentScores', params, {responseType: 'blob'}).then(r => {
         downloadFile(r.data, '学生成绩')
         this.$message.success('导出成功')
         // this.loaded.close()
@@ -299,12 +322,34 @@ export default {
       this.multipleSelection = val
       if (val.length > 0) this.exportDisabled = false
     },
+    dateChange(date) {
+      if (date && date.length) {
+        this.searchForm.createdAtStart = date[0]
+        this.searchForm.createdAtEnd = date[1]
+      } else {
+        this.searchForm.createdAtStart = ''
+        this.searchForm.createdAtEnd = ''
+      }
+    },
+    dateChange2(date) {
+      if (date && date.length) {
+        this.searchForm.classTimeStart = date[0]
+        this.searchForm.classTimeEnd = date[1]
+      } else {
+        this.searchForm.classTimeStart = ''
+        this.searchForm.classTimeEnd = ''
+      }
+    },
     computeIndex(index) {
       return (this.page - 1) * this.count + index + 1
     },
     // 重置
     resetForm(formName) {
       this.$refs[formName].resetFields()
+      this.date = []
+      this.date2 = []
+      this.dateChange()
+      this.dateChange2()
     },
     search() {
       this.tableObj.search()

@@ -80,31 +80,38 @@ export default {
 </script>
 <style lang="less">
 .search_form {
-  /*width: 35vw;*/
 
   .el-form-item {
-    /*width: 25vw;*/
-    min-width: 300px;
+    width: 300px;
 
     .el-form-item__content {
-      /*width: 15vw;*/
-      width: 200px;
+      .el-date-editor {
+        width: 200px;
+        padding: 3px 3px 3px 10px;
+
+        .el-range-separator {
+          line-height: 19px;
+          width: auto;
+        }
+
+        .el-range-input {
+          width: 47%;
+        }
+      }
 
       .el-input, .el-select {
-        width: 100%;
+        width: 200px;
       }
     }
 
     .el-form-item__label {
-      font-size: 13px;
-      /*width: 10vw;*/
+      font-size: 12px;
       width: 100px;
     }
   }
 
   .el-form-item:last-of-type { /*.search_btn*/
-    /*width: 15vw;*/
-    min-width: 200px;
+    width: 200px;
   }
 }
 

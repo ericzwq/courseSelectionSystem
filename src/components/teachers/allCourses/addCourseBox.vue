@@ -9,7 +9,7 @@
     <el-form-item label="教室" prop="classroom">
       <el-input v-model="ruleForm.classroom"></el-input>
     </el-form-item>
-    <el-form-item label="开课时间" prop="classTime">
+    <el-form-item label="开课日期" prop="classTime">
       <el-date-picker
           v-model="ruleForm.classTime"
           type="date"
@@ -56,7 +56,7 @@
             {min: 1, max: 10, message: '长度在 1 到 10 个字符', trigger: 'blur'}
           ],
           classTime: [
-            {required: true, message: '请选择开课时间', trigger: 'blur'}
+            {required: true, message: '请选择开课日期', trigger: 'blur'}
           ]
         },
         pickerOptions: {

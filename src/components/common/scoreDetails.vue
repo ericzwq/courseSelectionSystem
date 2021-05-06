@@ -45,11 +45,22 @@
           </el-option>
         </el-select>
       </el-form-item>
+      <el-form-item label="创建日期" prop="date">
+        <el-date-picker
+            clearable
+            v-model="date"
+            value-format="yyyy-MM-dd"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期">
+        </el-date-picker>
+      </el-form-item>
       <el-form-item class="form_btn">
         <el-button type="default" @click="search">查询</el-button>
         <el-button type="default" @click="resetForm('searchForm')">重置</el-button>
         <el-button type="text" @click="formCollapse = !formCollapse">
-          {{formCollapse ? '查看更多' : '收起'}}
+          {{ formCollapse ? '查看更多' : '收起' }}
           <i :class="[formCollapse ? 'el-icon-caret-bottom' : 'el-icon-caret-top']"></i>
         </el-button>
       </el-form-item>
@@ -75,7 +86,7 @@
           <el-table-column prop="teacherId" label="教师号" show-overflow-tooltip></el-table-column>
           <el-table-column label="分数" show-overflow-tooltip>
             <template slot-scope="scope">
-              <span>{{scope.row.score===-1?'暂无':scope.row.score}}</span>
+              <span>{{ scope.row.score === -1 ? '暂无' : scope.row.score }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="updatedBy" label="修改人" show-overflow-tooltip></el-table-column>
@@ -97,108 +108,115 @@
 </template>
 
 <script>
-  import fileDetail from "./fileDetail.vue";
+import fileDetail from "./fileDetail.vue";
 
-  export default {
-    name: 'scoreDetails',
-    data() {
-      return {
-        searchForm: {
-          fileName: '',
-          studentName: '',
-          studentId: '',
-          courseName: '',
-          courseId: '',
-          teacherName: '',
-          scoreCode: '',
-          studentCategory: 2
-        },
-        scoreOptions: [
-          {name: '请选择', value: ''},
-          {name: '特优(90以上)', value: 1},
-          {name: '优(80-89)', value: 2},
-          {name: '良(70-79)', value: 3},
-          {name: '及格(60-69)', value: 4},
-          {name: '不及格(60以下)', value: 5}
-        ],
-        studentCategoryOptions: [
-          // {name: '请选择', value: ''},
-          {name: '全部学生', value: 1},
-          {name: '我的学生', value: 2},
-        ],
-        tableData: [],
-        totalCount: 0,
-        page: 1,
-        count: 10,
-        id: parseInt(sessionStorage.getItem('id')),
-        tableObj: {},
-        multipleSelection: [],
-        importDialogVisible: false,
-        addDialogVisible: false,
-        level: '',
-        formCollapse: false
-      }
-    },
-    created() {
-      if (location.hash.includes('/students/')) {
-        this.level = 'students'
-        delete this.searchForm.studentName
-        delete this.searchForm.studentId
-        delete this.searchForm.studentCategory
-      } else if (location.hash.includes('/teachers/')) {
-        this.level = 'teachers'
-      } else if (location.hash.includes('/admin')) {
-        this.level = 'admins'
-        delete this.searchForm.studentCategory
-      } else {
-        this.$router.push('/login')
-      }
-    },
-    mounted() {
-      this.tableObj = this.$refs['table']
-    },
-    methods: {
-      getTable(page, count) {
-        this.page = page
-        this.count = count
-        this.getTableData.call(this, '/scoreDetails', this.searchForm, (data) => {
-          data[0].forEach(i => {
-            let kb = i.size / 1024 + ''
-            let dot = kb.indexOf('.')
-            i.size = kb.substring(0, dot + 3) + 'kb'
-          })
-        })
+export default {
+  name: 'scoreDetails',
+  data() {
+    return {
+      searchForm: {
+        fileName: '',
+        studentName: '',
+        studentId: '',
+        courseName: '',
+        courseId: '',
+        teacherName: '',
+        scoreCode: '',
+        studentCategory: 2
       },
-      deleteScoreDetail(row) {
-        this.$confirm('此操作将永久删除, 是否继续?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          this.axios.post('/deleteScoreDetail', {materialId: row.materialId}).then(r => {
-            let data = r.data
-            this.loaded && this.loaded.close()
-            if (data.status === 0) {
-              this.$message.success(data.message)
-              if (this.tableData.length <= 1) this.tableObj.page = this.tableObj.page - 1
-              this.tableObj.refresh()
-            }
-          })
-        })
-      },
-      computeIndex(index) {
-        return (this.page - 1) * this.count + index + 1
-      },
-      // 重置
-      resetForm(formName) {
-        this.$refs[formName].resetFields()
-      },
-      search() {
-        this.tableObj.search()
-      }
-    },
-    components: {
-      fileDetail
+      date: [],
+      scoreOptions: [
+        {name: '请选择', value: ''},
+        {name: '特优(90以上)', value: 1},
+        {name: '优(80-89)', value: 2},
+        {name: '良(70-79)', value: 3},
+        {name: '及格(60-69)', value: 4},
+        {name: '不及格(60以下)', value: 5}
+      ],
+      studentCategoryOptions: [
+        // {name: '请选择', value: ''},
+        {name: '全部学生', value: 1},
+        {name: '我的学生', value: 2},
+      ],
+      tableData: [],
+      totalCount: 0,
+      page: 1,
+      count: 10,
+      id: parseInt(sessionStorage.getItem('id')),
+      tableObj: {},
+      multipleSelection: [],
+      importDialogVisible: false,
+      addDialogVisible: false,
+      level: '',
+      formCollapse: false
     }
+  },
+  created() {
+    if (location.hash.includes('/students/')) {
+      this.level = 'students'
+      delete this.searchForm.studentName
+      delete this.searchForm.studentId
+      delete this.searchForm.studentCategory
+    } else if (location.hash.includes('/teachers/')) {
+      this.level = 'teachers'
+    } else if (location.hash.includes('/admin')) {
+      this.level = 'admins'
+      delete this.searchForm.studentCategory
+    } else {
+      this.$router.push('/login')
+    }
+  },
+  mounted() {
+    this.tableObj = this.$refs['table']
+  },
+  methods: {
+    getTable(page, count) {
+      this.page = page
+      this.count = count
+      let {date} = this, params = Object.assign({}, this.searchForm)
+      if (date && date.length) {
+        params.createdAtStart = date[0]
+        params.createdAtEnd = date[1]
+      }
+      this.getTableData.call(this, '/scoreDetails', params, (data) => {
+        data[0].forEach(i => {
+          let kb = i.size / 1024 + ''
+          let dot = kb.indexOf('.')
+          i.size = kb.substring(0, dot + 3) + 'kb'
+        })
+      })
+    },
+    deleteScoreDetail(row) {
+      this.$confirm('此操作将永久删除, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.axios.post('/deleteScoreDetail', {materialId: row.materialId}).then(r => {
+          let data = r.data
+          this.loaded && this.loaded.close()
+          if (data.status === 0) {
+            this.$message.success(data.message)
+            if (this.tableData.length <= 1) this.tableObj.page = this.tableObj.page - 1
+            this.tableObj.refresh()
+          }
+        })
+      })
+    },
+    computeIndex(index) {
+      return (this.page - 1) * this.count + index + 1
+    },
+    // 重置
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+      this.date = []
+    },
+    search() {
+      this.tableObj.search()
+    }
+  },
+  components: {
+    fileDetail
   }
+}
 </script>
