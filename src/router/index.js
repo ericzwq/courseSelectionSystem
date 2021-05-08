@@ -6,16 +6,15 @@ import 'nprogress/nprogress.css'
 Vue.use(VueRouter)
 
 const routes = [
-  {path: '/', redirect: '/courseselection/index'},
+  {path: '/', redirect: '/login'},
   {path: '/login', component: () => import('@/components/common/login.vue'), meta: {title: '登录'}},
   {path: '/findPsw', component: () => import('@/components/common/findPsw.vue'), meta: {title: '找回密码'}},
   {path: '/register', component: () => import('@/components/common/register.vue'), meta: {title: '注册'}},
-  {path: '/teachers', redirect: '/courseselection/index'},
-  {path: '/students', redirect: '/courseselection/index'},
-  {path: '/admins', redirect: '/courseselection/index'},
+  {path: '/teachers', redirect: '/courseselection/teachers/allCourses'},
+  {path: '/students', redirect: '/courseselection/students/selectedCourses'},
+  {path: '/admins', redirect: '/courseselection/admins/teachersCourses'},
   {
     path: '/courseselection', component: () => import('@/courseselection.vue'), children: [
-      {path: 'index', component: () => import('@/components/common/index.vue')},
       {
         path: 'logout',
         component: () => import('@/components/common/setting.vue'),
@@ -37,24 +36,19 @@ const routes = [
         meta: {title: '学生成绩', auth: true}
       },
       {
-        path: 'teachers/scoreDetails',
-        component: () => import('@/components/common/scoreDetails.vue'),
-        meta: {title: '成绩详情', auth: true}
-      },
-      {
         path: 'teachers/addedCourses',
         component: () => import('@/components/teachers/addedCourses/addedCourses.vue'),
         meta: {title: '已发课程', auth: true}
       },
       {
-        path: 'students/myScores',
-        component: () => import('@/components/students/myScores/myScores.vue'),
-        meta: {title: '查看成绩', auth: true}
+        path: 'students/selectedCourses',
+        component: () => import('@/components/students/selectedCourses/selectedCourses.vue'),
+        meta: {title: '已选课程', auth: true}
       },
       {
-        path: 'students/scoreDetails',
-        component: () => import('@/components/common/scoreDetails.vue'),
-        meta: {title: '成绩详情', auth: true}
+        path: 'students/myScores',
+        component: () => import('@/components/students/myScores/myScores.vue'),
+        meta: {title: '我的成绩', auth: true}
       },
       {
         path: 'students/selectCourses',
@@ -72,11 +66,6 @@ const routes = [
         meta: {title: '所有成绩', auth: true}
       },
       {
-        path: 'admins/scoreDetails',
-        component: () => import('@/components/common/scoreDetails.vue'),
-        meta: {title: '成绩详情', auth: true}
-      },
-      {
         path: 'admins/allTeachers',
         component: () => import('@/components/admins/allTeachers/allTeachers.vue'),
         meta: {title: '所有老师', auth: true}
@@ -86,8 +75,7 @@ const routes = [
         component: () => import('@/components/admins/allStudents/allStudents.vue'),
         meta: {title: '所有学生', auth: true}
       },
-      // {path: '/', redirect: '/courseselection/students/myScores'}
-      {path: '/', redirect: '/courseselection/index'}
+      {path: '/', redirect: '/courseselection/students/selectedCourses'}
     ]
   },
   {path: '*', component: () => import('@/components/common/404.vue'), meta: {title: '404'}},
@@ -103,11 +91,11 @@ router.beforeEach((to, from, next) => {
     console.log('no token')
     return next('/login')
   }//没有token
-  if (!to.meta.noLevel && to.meta.auth && !to.fullPath.includes(sessionStorage.getItem('level'))) { // 路由与session中身份不匹配
+  if (!to.meta.noLevel && to.meta.auth && !to.fullPath.includes(sessionStorage.getItem('level'))) {//路由与session中身份不匹配
     console.log('wrong level')
     return next('/login')
   }
-  if (to.fullPath === '/login') router.prePath = from.fullPath // 如果去登录页，则记录旧路由
+  if (to.fullPath === '/login') router.prePath = from.fullPath//如果去登录页，则记录旧路由
   if (!router.oldRoute) {
     if (oldPath.includes('/admins')) {
       router.oldRoute = 'admins'

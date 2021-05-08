@@ -2,17 +2,16 @@
   <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="f-container">
     <h1 class="f-title">学生选课系统-找回密码</h1>
     <el-form-item label="用户名" prop="username">
-      <el-input v-model.trim="ruleForm.username" size="small"></el-input>
+      <el-input v-model="ruleForm.username"></el-input>
     </el-form-item>
-    <email :rule-form="ruleForm" :params="emailParams" url="/public/authVerificationCode" :validator="emailValidator" ref="email"></email>
-    <!--    <el-form-item label="密保手机" prop="phone">-->
-    <!--      <el-input v-model="ruleForm.phone"></el-input>-->
-    <!--    </el-form-item>-->
-    <el-form-item label="新密码" prop="password">
-      <el-input type="password" v-model.trim="ruleForm.password" show-password size="small"></el-input>
+    <el-form-item label="密保手机" prop="phone">
+      <el-input v-model="ruleForm.phone"></el-input>
+    </el-form-item>
+    <el-form-item label="新密码" prop="newPsw">
+      <el-input type="password" v-model="ruleForm.newPsw"></el-input>
     </el-form-item>
     <el-form-item label="确认密码" prop="checkPsw">
-      <el-input type="password" v-model.trim="ruleForm.checkPsw" show-password size="small"></el-input>
+      <el-input type="password" v-model="ruleForm.checkPsw"></el-input>
     </el-form-item>
     <div class="f-radioBox">
       <el-radio-group v-model="level">
@@ -26,15 +25,13 @@
       </div>
     </div>
     <el-form-item class="f-btn">
-      <el-button type="primary" @click="submitForm('ruleForm')" size="small">确定</el-button>
-      <el-button @click="resetForm('ruleForm')" size="small">重置</el-button>
+      <el-button type="primary" @click="submitForm('ruleForm')">确定</el-button>
+      <el-button @click="resetForm('ruleForm')">重置</el-button>
     </el-form-item>
   </el-form>
 </template>
 
 <script>
-  import email from "./email";
-
   export default {
     name: 'findPsw',
     data() {
@@ -45,7 +42,7 @@
           callback()
         }
       };
-      let passwordVal = (rule, value, callback) => {
+      let newPswVal = (rule, value, callback) => {
         if (value === '') {
           callback(new Error('请输入新密码'));
         } else {
@@ -61,7 +58,7 @@
       let checkPswVal = (rule, value, callback) => {
         if (value === '') {
           callback(new Error('请确认密码'));
-        } else if (value !== this.ruleForm.password) {
+        } else if (value !== this.ruleForm.newPsw) {
           callback(new Error('两次输入密码不一致!'));
         } else {
           callback();
@@ -71,30 +68,19 @@
         level: 'students',
         ruleForm: {
           username: '',
-          // phone: '',
-          email: '',
-          verificationCode: '',
-          password: '',
+          phone: '',
+          newPsw: '',
           checkPsw: ''
         },
-        emailParams: {isRegister: 0, username: ''},
         rules: {
           username: [
             {required: true, trigger: 'blur', message: '请输入用户名'},
           ],
-          // phone: [
-          //   {required: true, trigger: 'blur', validator: oldPswVal},
-          // ],
-          // email: [{
-          //   trigger: 'blur', validator: (rule, value, callback) => {
-          //     if (!value) return callback('请输入邮箱')
-          //     if (!/\w+@\w+.com$/.test(value)) return callback('请输入正确的邮箱')
-          //     callback()
-          //   }
-          // }],
-          verificationCode: [{require: true, message: '请输入验证码', trigger: 'blur'}],
-          password: [
-            {required: true, trigger: 'blur', validator: passwordVal},
+          phone: [
+            {required: true, trigger: 'blur', validator: oldPswVal},
+          ],
+          newPsw: [
+            {required: true, trigger: 'blur', validator: newPswVal},
           ],
           checkPsw: [
             {required: true, trigger: 'blur', validator: checkPswVal},
@@ -103,36 +89,29 @@
       };
     },
     methods: {
-      emailValidator() {
-        if (!this.ruleForm.username) return this.$message.error('请输入用户名') === 1
-        this.emailParams.username = this.ruleForm.username
-        return true
-      },
       submitForm(formName) {
         this.$refs[formName].validate((valid) => {
-          if (valid && this.$refs['email'].validate()) {
+          if (valid) {
             let ruleForm = this.ruleForm
-            this.axios.post('/authCode/findPsw', {
+            this.axios.post('/findPsw', {
               level: this.level,
-              token: sessionStorage.getItem('codeToken'),
-              ...ruleForm
+              username: ruleForm.username,
+              phone: ruleForm.phone,
+              password: ruleForm.newPsw
             }).then(r => {
               let data = r.data
-              if (data.status !== 0) return
+              if (data.status !== 0) return this.$message.error(data.message)
               this.$message.success('修改成功，3秒后跳转')
-              sessionStorage.setItem('routers', JSON.stringify(data.routers))
               sessionStorage.setItem('token', data.token)
               sessionStorage.setItem('level', this.level)
               sessionStorage.setItem('id', data.id)
               sessionStorage.setItem('name', data.name)
-              sessionStorage.setItem('sex', data.sex)
               sessionStorage.setItem('username', ruleForm.username)
               sessionStorage.setItem('phone', data.phone)
-              sessionStorage.setItem('email', data.email)
               setTimeout(() => {
-                this.$router.push(this.level)
+                this.$router.push('/' + this.level)
               }, 3000)
-            })
+            }, err => this.$err(err))
           } else {
             console.log('error submit!!');
             return false;
@@ -142,9 +121,6 @@
       resetForm(formName) {
         this.$refs[formName].resetFields();
       }
-    },
-    components: {
-      email
     }
   }
 </script>

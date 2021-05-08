@@ -9,15 +9,10 @@
     <el-form-item label="教室" prop="classroom">
       <el-input v-model="ruleForm.classroom"></el-input>
     </el-form-item>
-    <el-form-item label="开课时间" prop="classTime">
-      <el-date-picker
-          v-model="ruleForm.classTime"
-          type="date"
-          :picker-options="pickerOptions"
-          value-format="yyyy-MM-dd"
-          placeholder="选择日期">
-      </el-date-picker>
-    </el-form-item>
+    <!--    <el-form-item>-->
+    <!--      <el-button type="primary" @click="submitForm('ruleForm')">添加</el-button>-->
+    <!--      <el-button @click="resetForm('ruleForm')">重置</el-button>-->
+    <!--    </el-form-item>-->
   </el-form>
 </template>
 
@@ -30,7 +25,6 @@
           courseName: '',
           maxCount: '',
           classroom: '',
-          classTime: ''
         },
         rules: {
           courseName: [
@@ -40,29 +34,21 @@
           maxCount: [
             {required: true, message: '请输入人数', trigger: 'blur'},
             {
-              validator: (rule, v, cb) => {
-                if (!/^[1-9]\d{0,2}$/.test(v)) return cb(new Error('请输入3位及3位以下正整数'))
-                // if (isNaN(v)) {
-                //   cb(new Error('请输入数字'))
-                // } else {
-                cb()
-                // }
+              validator: (rule, v, callback) => {
+                if (isNaN(v)) {
+                  callback(new Error('必须为数字'))
+                } else {
+                  callback()
+                }
               },
               trigger: 'blur'
             },
+            {min: 1, max: 3, message: '长度在 1 到 3 个字符', trigger: 'blur'}
           ],
           classroom: [
             {required: true, message: '请输入教室', trigger: 'blur'},
             {min: 1, max: 10, message: '长度在 1 到 10 个字符', trigger: 'blur'}
           ],
-          classTime: [
-            {required: true, message: '请选择开课时间', trigger: 'blur'}
-          ]
-        },
-        pickerOptions: {
-          disabledDate(time) {
-            return time.getTime() < Date.now()
-          }
         }
       };
     },
